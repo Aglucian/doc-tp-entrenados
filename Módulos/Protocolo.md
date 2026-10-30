@@ -2,7 +2,7 @@
 tags: [tp-so, entrenados, protocolo]
 archivo: utils/src/utils/protocolo_entrenados.h
 version: 1
-actualizado: 2026-10-29
+actualizado: 2026-10-30
 ---
 
 # Protocolo
@@ -84,6 +84,11 @@ Detalle de `OP_SYSCALL` según `origin/core`. Todas empiezan con `{uint32 id, ui
 | `LOAD_CHECKPOINT` | 7 | `string nombre, uint32 tamaño, uint32 n, (dir_fisica, tam)×n` | **sí** | nada |
 | `DELETE_CHECKPOINT` | 8 | `string nombre` | **sí** | nada |
 | `EXIT` | 9 | — | — | nada (en la práctica el Core usa `OP_DEVOLUCION` con `EXIT`) |
+
+> [!info] Cómo responde el Planificador (rama `planificador`)
+> - `ALLOC` sin espacio: responde `{false, 0}` y **finaliza el Job** (`OUT_OF_MEMORY`). El Core tiene que abandonarlo sin devolverlo.
+> - `FREE` con una dirección inválida: responde `{false, 0}` y el Job sigue.
+> - Syscalls de servicio malformadas (por ejemplo, si la suma de los tramos no es igual al tamaño): el Job finaliza con `ERROR_SYSCALL`.
 
 > [!important] Páginas lockeadas
 > En las syscalls con tramos, el Core ya tradujo las direcciones y **las páginas quedan lockeadas** en la Placa. El Planificador tiene que mandar `OP_DESLOCKEO_PAGINAS {jid}` cuando termina el servicio, también si hubo un error.

@@ -3,7 +3,7 @@ tags: [tp-so, entrenados, modulo, core]
 modulo: core
 rama: develop + origin/core
 responsables: [D5]
-actualizado: 2026-10-29
+actualizado: 2026-10-30
 ---
 
 # Core
@@ -32,6 +32,8 @@ Es el ejecutor de Jobs. Recibe un Job (`jid` + contexto) del Planificador y corr
 > 2. `solicitar_syscall_con_parametro`
 > 3. guardar `valor` en el registro destino (ALLOC)
 > 4. `pc++`
+>
+> Si `ALLOC` recibe `ok=false`, el Planificador **ya finalizó el Job** (`OUT_OF_MEMORY`). El Core tiene que abandonarlo sin mandar `OP_DEVOLUCION`. El Planificador ya atiende ALLOC/FREE desde `e5fd060`.
 
 ## Ciclo de instrucción
 

@@ -1,7 +1,7 @@
 ---
 tags: [tp-so, entrenados, moc]
 aliases: [Inicio, Índice TP EntrenadOS]
-actualizado: 2026-10-29
+actualizado: 2026-10-30
 ---
 
 # TP EntrenadOS 2C2026: Inicio
@@ -9,7 +9,7 @@ actualizado: 2026-10-29
 Esta es la documentación de trabajo del TP **EntrenadOS** (grupo *RequiemSO*). Está fuera del repositorio `tp-2026-2c-requiemso`, para que sirva de planificación y consulta sin ensuciar el código.
 
 > [!info] Fuente
-> La documentación se armó a partir de la rama `develop` (commit `6f198c6`) y de las ramas remotas sin mergear (`origin/core`, `origin/placa`, `origin/storage`) al **29/10/2026**. Cada función indica si está en `develop` o solo en su rama.
+> La documentación se armó a partir de la rama `develop` y de las ramas remotas sin mergear al **29/10/2026**. Se actualizó el **30/10** con el trabajo del Check 3 en la rama `planificador` (`169c8a8`). Cada función indica si está en `develop` o solo en su rama.
 
 ## Planificación
 - [[Plan de acción]]: qué falta, en qué orden y para qué checkpoint
@@ -44,6 +44,6 @@ flowchart LR
 | --- | --- | --- |
 | Check 1 | 12/09 | Conexiones y serialización ✅ |
 | Check 2 | 10/10 | Planificación básica FIFO/RR ✅ (+ HRRN) |
-| **Check 3** | **31/10** | Memoria, paginación, syscalls, servicios, BLOCKED ⏳ |
+| **Check 3** | **31/10** | Memoria, paginación, syscalls, servicios, BLOCKED ⏳ (Planificador ✅, falta integrar Core y Placa) |
 | Check 4 | 14/11 | Storage y persistencia (checkpoints) |
 | Entregas | 28/11 · 12/12 · 19/12 | Pruebas end-to-end y coloquio |
