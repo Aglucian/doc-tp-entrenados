@@ -14,6 +14,7 @@ Esta es la documentación de trabajo del TP **EntrenadOS** (grupo *RequiemSO*). 
 ## Planificación
 - [[Plan de acción]]: qué falta, en qué orden y para qué checkpoint
 - [[Estado de ramas]]: qué tiene cada rama y cómo integrarlas
+- [[Presentación - Funcionamiento del TP]]: diapositivas que explican el TP de punta a punta (abrir con *Slides: Start presentation*)
 
 ## Módulos
 | Módulo | Nota | Rol |
