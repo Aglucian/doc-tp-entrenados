@@ -123,7 +123,7 @@ Detalle en [[Despliegue distribuido#Primera corrida distribuida (14/11)]]. La pr
 > [!warning] Restricción de configuración
 > La Placa exige que `TAM_MEMORIA` y `TAM_PAGINA` sean potencias de 2 (con 384 no arranca).
 
-> [!bug] Pendiente en el Core: `FREE` con `ok=false`
+> [!success] Resuelto: `FREE` con `ok=false` (PR #19, `69c087f`)
 > En esta prueba no apareció porque todos los `FREE` fueron válidos. En el código, el Core hace `goto error` → `EJEC_ERROR` y **se desconecta** del Planificador. Ver [[Core]].
 
 ## Qué falta probar

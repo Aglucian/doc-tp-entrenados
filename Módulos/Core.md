@@ -24,10 +24,17 @@ Es el ejecutor de Jobs. Recibe un Job (`jid` + contexto) del Planificador y corr
 | MMU: división en tramos por página, traducción, page fault | ❌ | ✅ |
 | FORWARD / BACKWARD / UPDATE | ❌ | ✅ |
 | LOAD_BATCH, LABEL, REPORT, SAVE/LOAD/DELETE_CHECKPOINT (envío) | ❌ | ✅ |
-| **ALLOC / FREE** | ✅ (`5ba1c3b`) | ✅ (manejo de `ok=false` pendiente, ver abajo) |
+| **ALLOC / FREE** | ✅ (`5ba1c3b` + `69c087f`) | ✅ |
 
-> [!bug] `FREE` con `ok=false` desconecta al Core
-> ALLOC y FREE ya están conectados (`5ba1c3b`, PR #17), pero el manejo de `ok=false` no respeta el contrato con el [[Planificador]]:
+> [!success] Resuelto en `69c087f` (PR #19, 14/11)
+> - Agregué `EJEC_JOB_FINALIZADO` a `t_resultado_ejecucion`.
+> - **`FREE` con `ok=false`:** loguea un warning y el Job sigue.
+> - **`ALLOC` con `ok=false`:** loguea un warning y abandona el Job **sin devolverlo**.
+>
+> Se probó con los módulos reales: después de un FREE inválido y un ALLOC sin espacio, el Core siguió conectado y ejecutó el Job siguiente.
+
+> [!bug]- Historial: `FREE` con `ok=false` desconectaba al Core
+> ALLOC y FREE se conectaron en `5ba1c3b` (PR #17), pero el manejo de `ok=false` no respetaba el contrato con el [[Planificador]]:
 > - **`FREE` (bug):** hace `goto error` → `EJEC_ERROR` → `ejecutar_ciclo_instruccion` devuelve `false` → `atender_jobs_planificador` corta y **el Core se desconecta**. El Planificador devuelve el Job a READY y, si era el único Core, el sistema se traba. Lo correcto: loguear un warning y continuar (`break`).
 > - **`ALLOC` (cosmético):** devuelve `EJEC_EXIT`, así que manda un `OP_DEVOLUCION EXIT` de un Job que el Planificador ya finalizó (`OUT_OF_MEMORY`). El Planificador lo ignora con un warning. Lo acordado era abandonar el Job sin devolverlo.
 

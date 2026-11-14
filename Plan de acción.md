@@ -11,9 +11,11 @@ Volver a [[00 - Inicio]] · Ver también [[Estado de ramas]], [[Protocolo]]
 > [!warning] Situación al 14/11
 > **Check 3 integrado.** Los PRs #12 (core), #14 (placa), #15 (planificador) y #17 (fix ALLOC/FREE del core) están en `develop`, y los 5 módulos compilan sin warnings.
 > La [[Mini Entrenamiento 2026-11-14|Mini Entrenamiento]] con los módulos reales salió bien: 9 page faults, 5 reemplazos con Offload y 0 errores.
+> El bug de `FREE`/`ALLOC` del Core se resolvió en el PR #19.
 > Pendientes:
-> - el bug de `FREE` con `ok=false` en el Core
 > - **Check 4 (checkpoints), que es hoy**
+> - SIGINT del Storage
+> - llevar `deploy/` a `develop`
 
 Roles (de `doc/distribucion-equipo.md`):
 - **D1**: Planificador, planificación
@@ -53,8 +55,8 @@ Responsable: D2 · Commit `e5fd060`
 El Core espera `OP_RSP_SYSCALL {bool ok, uint32 valor}`:
 
 - [x] **[Core, D5]** `case INST_ALLOC` / `INST_FREE` en `ejecutar_instruccion` (`5ba1c3b`, PR #17)
-- [ ] **[Core, D5]** `FREE` con `ok=false`: hoy hace `goto error` y **el Core se desconecta**. Tiene que loguear un warning y seguir. Ver [[Core]]
-- [ ] **[Core, D5]** (cosmético) `ALLOC` con `ok=false` devuelve `EJEC_EXIT` y manda un `OP_DEVOLUCION` de un Job ya finalizado. Debería abandonarlo sin devolverlo
+- [x] **[Core, D5]** `FREE` con `ok=false` ya no desconecta al Core: loguea un warning y sigue (`69c087f`, PR #19)
+- [x] **[Core, D5]** `ALLOC` con `ok=false` abandona el Job sin devolverlo (`EJEC_JOB_FINALIZADO`, `69c087f`, PR #19)
 - [x] `SYSCALL_ALLOC` → `OP_ASIGNAR_ESPACIO` → responde la dirección lógica. Sin espacio: `{false}` y finaliza con `OUT_OF_MEMORY`
 - [x] `SYSCALL_FREE` → `OP_LIBERAR_ESPACIO`. Dirección inválida: `{false}` y el Job sigue
 - [x] `t_proceso` tiene `memoria_dinamica_actual` y `reservas` (`dir → tamaño`); el máximo sale en las estadísticas
