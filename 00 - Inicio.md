@@ -14,6 +14,7 @@ Esta es la documentación de trabajo del TP **EntrenadOS** (grupo *RequiemSO*). 
 ## Planificación
 - [[Plan de acción]]: qué falta, en qué orden y para qué checkpoint
 - [[Estado de ramas]]: qué tiene cada rama y cómo integrarlas
+- [[Despliegue distribuido]]: servidores de prueba y `deploy/desplegar.sh` (cómo correr pruebas en varias máquinas)
 - [[Mini Entrenamiento 2026-11-14]]: primera prueba de punta a punta con los módulos reales (Check 3)
 - [[Presentación - Funcionamiento del TP]]: diapositivas que explican el TP de punta a punta (abrir con *Slides: Start presentation*)
 

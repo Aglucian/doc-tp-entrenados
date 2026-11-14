@@ -82,6 +82,7 @@ Responsable: todos
 - [x] Revisar en los logs: page faults en varias páginas, Jobs que pasan por BLOCKED, reportes hex correctos
 - [ ] Correr con `valgrind --leak-check=full` en Planificador y Placa (Planificador contra mocks: ✅ 0 bytes de fuga confirmada)
 - [ ] Probar con LRU y con CLOCK-M en la Placa, y con FIFO, RR y HRRN en el Planificador (hecho: CLOCK-M + RR)
+- [x] Prueba distribuida en 5 servidores (un módulo por máquina) → [[Despliegue distribuido#Primera corrida distribuida (14/11)]]
 - [ ] Varios Jobs y varios Cores a la vez
 - [ ] Decidir qué hacer con el livelock de rangos más grandes que la memoria (ver [[Mini Entrenamiento 2026-11-14#Hallazgos]])
 
@@ -114,7 +115,9 @@ Responsable: todos
 - [x] Estadísticas completas en el log de fin de Job (memoria dinámica máxima agregada en `e5fd060`)
 - [ ] `SIGINT`/`SIGTERM` con cierre ordenado en los 4 módulos
 - [ ] Helgrind/DRD en pruebas de stress
-- [ ] Scripts de deploy y configs por máquina
+- [x] Scripts de deploy y configs por máquina → [[Despliegue distribuido]] (`deploy/desplegar.sh`, `18d367d`)
+- [ ] Más pruebas distribuidas (ver [[Despliegue distribuido#Próximas pruebas]])
+- [ ] **[Storage, D4]** Manejar SIGINT sin loguear `Falló accept()` al apagarse
 - [ ] Cada integrante debe poder explicar cualquier módulo en el coloquio
 
 ## Checklist de logs obligatorios del Planificador

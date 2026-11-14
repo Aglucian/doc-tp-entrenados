@@ -21,6 +21,8 @@ Las ramas se comparan contra `origin/develop` (`5922131`) después de un `git fe
 
 No hay PRs abiertos.
 
+> [!info] `planificador` tiene `18d367d` (despliegue distribuido, `deploy/`), todavía sin pushear ni en `develop`. Ver [[Despliegue distribuido]].
+
 > [!info] Ramas locales
 > El 14/11 todas se actualizaron a su remota con un fast-forward. La `planificador` local está en `5922131` (igual que `develop`), 17 commits adelante de `origin/planificador` (solo merges) y sin pushear.
 

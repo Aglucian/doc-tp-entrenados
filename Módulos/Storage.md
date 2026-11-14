@@ -24,6 +24,9 @@ Persiste los **checkpoints** de los Jobs sobre un filesystem propio, `FAT32_TRAI
 | Journaling y recuperación | ❌ | ❌ |
 | Retardos `RETARDO_ACCESO_BLOQUE` / `RETARDO_COMMIT` | ❌ | ? (revisar en `consola.c`) |
 
+> [!warning] Apagado
+> Cuando recibe Ctrl-C (SIGINT), loguea `[ERROR] Falló accept(): Interrupted system call` y `Error al aceptar conexión entrante`. Lo detectó la [[Despliegue distribuido|prueba distribuida]] del 14/11. Habría que manejar la señal y cerrar sin error.
+
 > [!todo] Check 4
 > La lógica de `WRITE`, `CAT` y `RM` de la consola es casi la misma que necesitan `GUARDAR`, `CARGAR` y `ELIMINAR_CHECKPOINT`. Conviene moverla a funciones de `filesystem.c` (`fs_escribir`, `fs_leer`, `fs_eliminar`) que usen tanto la consola como `operaciones.c`. Ver [[Plan de acción#Fase F: Checkpoints (Check 4 · 14/11)]].
 

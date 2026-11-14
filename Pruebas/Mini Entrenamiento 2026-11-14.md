@@ -103,6 +103,13 @@ Syscalls: 4 - Page faults: 9 - Transiciones READY=>EXEC: 12
 
 El único warning fue `El path del Job inicial no es legible desde el Planificador: mini`. Es lo esperable: el script lo lee la Placa, no el Planificador.
 
+## Corrida distribuida
+El mismo día se repitió en **5 servidores** (un módulo por máquina) con `deploy/desplegar.sh`:
+- mismos resultados: 9 page faults, 5 reemplazos y el mismo reporte
+- 0 errores (los 2 del Storage son del apagado)
+
+Detalle en [[Despliegue distribuido#Primera corrida distribuida (14/11)]]. La prueba quedó versionada en `deploy/pruebas/mini_entrenamiento/`.
+
 ## Hallazgos
 
 > [!bug] Livelock si el rango de una syscall es más grande que la memoria
@@ -122,6 +129,7 @@ El único warning fue `El path del Job inicial no es legible desde el Planificad
 ## Qué falta probar
 - [ ] La misma prueba con `ALGORITMO_REEMPLAZO=LRU`
 - [ ] Con FIFO y con HRRN en el Planificador
+- [x] En máquinas distintas (5 servidores)
 - [ ] Varios Jobs y varios Cores a la vez, compitiendo por los marcos
 - [ ] `LABEL` con entrada por teclado
 - [ ] Con valgrind en la Placa y en el Planificador
