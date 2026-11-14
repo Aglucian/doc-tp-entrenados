@@ -50,6 +50,20 @@ deploy/catedra.sh checkpoint_3 todos --preparar      # despliega origin/develop 
 
 `06_contexto_a` y `07_contexto_b` (814 y 614 instrucciones) no tienen la secuencia de FETCH escrita como lista en `individuales.md`. En esos dos se comparan solo los registros finales.
 
+## Checkpoint 2 con los retardos reales
+`RETARDO_MEMORIA=500` (cada FETCH tarda 500 ms) y `RR_QUANTUM=2000`, tal como vienen las configs. **Todo pasa, con 0 errores en los logs.**
+
+| Escenario | Duración | Detalle |
+| --- | ---: | --- |
+| 01 instrucciones (9 scripts) | ~40 s | este escenario usa `RETARDO_MEMORIA=10`; 9/9 ✅ |
+| 02 FIFO, 1 Core | 920 s | ✅ los 3 hijos con sus registros y FETCH |
+| 03 RR, 1 Core | 869 s | ✅ **388 desalojos** (220 del Job A y 164 del B); unas **4 instrucciones por turno**, que es lo que da 2000 ms / 500 ms |
+| 04 RR, 2 Cores | 443 s | ✅ la mitad del tiempo: los dos Cores en paralelo (823 y 627 FETCH), 365 desalojos |
+| 05 grado 1 | 892 s | ✅ como máximo 1 Job admitido a la vez |
+| 05 grado 2 | 869 s | ✅ como máximo 2 Jobs admitidos a la vez |
+
+La guía estima unos 12 minutos por corrida (407 s para A y 307 s para B, sin contar red ni cambios de contexto). Las medidas dan entre 14 y 15 minutos con un Core, y la mitad con dos.
+
 ## Checkpoint 3 (retardos reales)
 | Escenario | Esperado | Resultado |
 | --- | --- | --- |
@@ -107,6 +121,6 @@ PLACA=192.168.1.25 STORAGE=192.168.1.25 PLANIFICADOR=192.168.1.25 CORES_HOSTS="1
 - **Mapa de JIDs:** los escenarios de consola usaban el del escenario anterior.
 
 ## Pendiente
-- [ ] CP2 con los retardos reales (unos 12 minutos por escenario), para ver los desalojos RR con quantum de 2000 ms
+- [x] CP2 con los retardos reales: ✅ (ver la tabla de arriba)
 - [ ] CP4, cuando lo publiquen: se agrega a `catedra.sh` (los checkpoints ya están probados con `deploy/pruebas/checkpoints/correr.sh`)
 - [x] Distribuciones mixtas de módulos entre servidores (4 repartos ✅)
