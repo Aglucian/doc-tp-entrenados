@@ -132,11 +132,13 @@ deploy/catedra.sh checkpoint_2 todos --rapido
 - `catedra.conf`: en qué servidor va cada módulo.
 - `catedra_entradas.conf`: las respuestas al Labeler y los comandos de consola del Storage.
 - `verificar_catedra.py`: la comparación con los resultados esperados.
+- `pruebas/repartos.sh`: los mismos escenarios con 4 repartos de módulos distintos ([[Suite cátedra 2026-11-14#Repartos de módulos entre servidores]]).
+- Cada servidor se puede pisar desde el entorno: `PLACA=… STORAGE=… PLANIFICADOR=… CORES_HOSTS="…" deploy/catedra.sh …`
 
 ## Próximas pruebas
 - [ ] Varios Jobs (con `INIT_JOB`) para que trabajen los 2 Cores
 - [ ] LRU contra CLOCK-M con el mismo script
 - [ ] FIFO y HRRN en el Planificador
 - [ ] Desconexión de un Core en medio de la ejecución (`tmux kill-session` sobre `tp-core-2`)
-- [ ] Todo en una sola máquina y distribuciones mixtas
+- [x] Todo en una sola máquina y distribuciones mixtas (4 repartos ✅)
 - [ ] Checkpoints (Check 4): `SAVE` en un Job y `LOAD` en otro, y Storage caído

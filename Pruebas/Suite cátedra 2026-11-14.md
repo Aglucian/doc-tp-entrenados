@@ -69,6 +69,28 @@ Patrones A y B, de `resultados/memoria.md`:
 - A: `31 00 00 00 01 00 00 00 64 00 00 00 00 00 00 00 33 00 00 00`
 - B: `62 00 00 00 01 00 00 00 C8 00 00 00 00 00 00 00 66 00 00 00`
 
+## Repartos de módulos entre servidores
+La evaluación puede cambiar en qué máquina corre cada módulo. Con `deploy/pruebas/repartos.sh` se corrieron dos escenarios con 4 repartos distintos:
+- **CP2 04** (RR con 2 Cores, modo rápido)
+- **CP3 07** (memoria, servicios y Labeler, con 2 Cores)
+
+| Reparto | Placa | Storage | Planificador | Core 1 | Core 2 | CP2 04 | CP3 07 |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Todo junto | .25 | .25 | .25 | .25 | .25 | ✅ | ✅ |
+| Memoria aparte | .25 | .25 | .26 | .26 | .27 | ✅ | ✅ |
+| Cores con la Placa | .25 | .26 | .26 | .25 | .25 | ✅ | ✅ |
+| Cores separados | .27 | .28 | .29 | .25 | .26 | ✅ | ✅ |
+
+Pasaron los 8, sin `[ERROR]` en los logs. Para probar otro reparto se pisan los servidores desde el entorno:
+
+```bash
+PLACA=192.168.1.25 STORAGE=192.168.1.25 PLANIFICADOR=192.168.1.25 CORES_HOSTS="192.168.1.25 192.168.1.25" \
+  deploy/catedra.sh checkpoint_3 07_servicios_fifo
+```
+
+> [!note] Binarios por servidor
+> `preparar` compila en cada servidor solo los módulos de su reparto fijo. Ahora `catedra.sh` compila en el momento el binario que falte antes de lanzar cada módulo, así cualquier reparto funciona sin preparar de nuevo.
+
 ## Cambios en el TP que salieron de la suite
 > [!bug] Placa: Job inicial con ruta absoluta (`896a387`)
 > La guía del CP2 pasa el Job inicial como `"$PWD/scripts/..."` y dice que "Placa debe aceptar esa ruta sin anteponer `PATH_INSTRUCCIONES`". La Placa la rechazaba (`se esperaba un archivo relativo…`) y el Job terminaba con `ERROR_PLACA`.
@@ -87,4 +109,4 @@ Patrones A y B, de `resultados/memoria.md`:
 ## Pendiente
 - [ ] CP2 con los retardos reales (unos 12 minutos por escenario), para ver los desalojos RR con quantum de 2000 ms
 - [ ] CP4, cuando lo publiquen: se agrega a `catedra.sh` (los checkpoints ya están probados con `deploy/pruebas/checkpoints/correr.sh`)
-- [ ] Distribuciones mixtas de módulos entre servidores
+- [x] Distribuciones mixtas de módulos entre servidores (4 repartos ✅)
