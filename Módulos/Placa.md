@@ -53,6 +53,9 @@ Es la memoria del sistema. Se ocupa de:
 | `aplicar_retardo_memoria()` *(static)* | `usleep(RETARDO_MEMORIA)` |
 
 ## `instrucciones.c` / `instrucciones.h`
+
+> [!info] Rutas absolutas (`896a387`)
+> El Job inicial (y cualquier `INIT_JOB`) puede ser relativo a `PATH_INSTRUCCIONES` o una ruta absoluta, que se usa tal cual. Lo exige la guía del CP2 de la cátedra. Ver [[Suite cátedra 2026-11-14]].
 | Función | Descripción |
 | --- | --- |
 | `inicializar_instrucciones()` | Crea la lista de `t_job_instrucciones` |

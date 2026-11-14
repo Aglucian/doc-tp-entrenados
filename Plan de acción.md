@@ -1,7 +1,7 @@
 ---
 tags: [tp-so, entrenados, plan]
 actualizado: 2026-11-14
-proximo_hito: Check 4 (14/11)
+proximo_hito: Entrega 1 (28/11)
 ---
 
 # Plan de acción
@@ -12,8 +12,8 @@ Volver a [[00 - Inicio]] · Ver también [[Estado de ramas]], [[Protocolo]]
 > **Check 3 integrado.** Los PRs #12 (core), #14 (placa), #15 (planificador) y #17 (fix ALLOC/FREE del core) están en `develop`, y los 5 módulos compilan sin warnings.
 > La [[Mini Entrenamiento 2026-11-14|Mini Entrenamiento]] con los módulos reales salió bien: 9 page faults, 5 reemplazos con Offload y 0 errores.
 > El bug de `FREE`/`ALLOC` del Core se resolvió en el PR #19.
-> Pendientes:
-> - **Check 4 (checkpoints), que es hoy**
+> **Check 4 integrado** (#21 Planificador y #22 Storage, con journaling) y probado con `kill -9` en los 5 servidores ([[Despliegue distribuido]]).
+> **Suite de la cátedra:** CP2 y CP3 pasan completos ([[Suite cátedra 2026-11-14]]).
 
 Roles (de `doc/distribucion-equipo.md`):
 - **D1**: Planificador, planificación

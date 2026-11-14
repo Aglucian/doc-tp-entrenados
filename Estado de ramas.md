@@ -7,11 +7,11 @@ actualizado: 2026-11-14
 
 Volver a [[00 - Inicio]] · Ver [[Plan de acción]]
 
-Las ramas se comparan contra `origin/develop` (`2a9b3b3`) después de un `git fetch` el **14/11**.
+Las ramas se comparan contra `origin/develop` (`03d9deb`) después de un `git fetch` el **14/11**.
 
 | Rama | Adelante / atrás de `develop` | Contenido | Acción |
 | --- | --- | --- | --- |
-| `develop` | — | Check 3 integrado: #12 core, #14 placa, #15 planificador, #17 y #19 (ALLOC/FREE del core) + #20 despliegue (`deploy/`) + `2a9b3b3` señales del Storage (commit directo) | base |
+| `develop` | — | Check 3 integrado: #12 core, #14 placa, #15 planificador, #17 y #19 (ALLOC/FREE del core) + #20 despliegue + `2a9b3b3` señales del Storage + **Check 4: #21 Planificador y #22 Storage** + `5282eb3`/`896a387`/`03d9deb` (prueba de checkpoints, Placa y log de contexto, runner de la cátedra) | base |
 | `main` | 0 / −6 | Último merge: #16 (develop → main, 31/10). Le faltan #17, #19 y #20 | mergear `develop` → `main` cuando se cierre el check |
 | `origin/core` | 0 / −1 | Ya está en `develop` (#19) | — |
 | `origin/placa` | 0 / −9 | Ya está en `develop` (#14) | — |

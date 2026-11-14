@@ -121,6 +121,18 @@ Para una prueba nueva alcanza con copiar la carpeta y cambiar las IPs y las clav
 > - ~~**El Storage loguea errores al apagarse**~~: resuelto en `2a9b3b3`. Al repetir la prueba distribuida dio 0 errores en los 6 logs ([[Storage]]).
 > - **El Core 2 quedó sin trabajo:** con un solo Job, el Core 1 siempre está libre primero. Para usar los 2 Cores hace falta una prueba con varios Jobs.
 
+## Suite de la cátedra: `deploy/catedra.sh`
+Corre los escenarios de `entrenados-pruebas` (clonado en `~/entrenados-pruebas`) con sus propias configs y los verifica automáticamente. Detalle y resultados en [[Suite cátedra 2026-11-14]].
+
+```bash
+deploy/catedra.sh checkpoint_3 todos
+deploy/catedra.sh checkpoint_2 todos --rapido
+```
+
+- `catedra.conf`: en qué servidor va cada módulo.
+- `catedra_entradas.conf`: las respuestas al Labeler y los comandos de consola del Storage.
+- `verificar_catedra.py`: la comparación con los resultados esperados.
+
 ## Próximas pruebas
 - [ ] Varios Jobs (con `INIT_JOB`) para que trabajen los 2 Cores
 - [ ] LRU contra CLOCK-M con el mismo script

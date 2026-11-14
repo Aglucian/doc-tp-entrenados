@@ -72,6 +72,9 @@ El enunciado no los define. Estos son los que elegimos:
 | `ERROR_LOADER` / `ERROR_LABELER` / `ERROR_LOGGER` | Falló el servicio (archivo inexistente, stdin cerrado, error de la Placa…) |
 | `MOTIVO_NO_SOPORTADO` | Devolución con un motivo desconocido |
 
+> [!info] Log de contexto final (`896a387`)
+> Al finalizar cada Job se loguea `## (<JID>) Contexto final: PC=… AX=… … E3=…`. No es un log obligatorio: lo usan las pruebas de la cátedra para validar los registros ([[Suite cátedra 2026-11-14]]).
+
 ## Hilos
 | Hilo | Función | Qué hace |
 | --- | --- | --- |
