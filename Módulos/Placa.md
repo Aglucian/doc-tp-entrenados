@@ -49,7 +49,7 @@ Todo en `develop`.
 | Función | Descripción |
 | --- | --- |
 | `iniciar_servidor_placa()` | `crear_servidor` y loop de `accept`, con un hilo `atender_cliente` por conexión |
-| `atender_cliente(void*)` | Handshake: loguea `## Módulo: CORE/PLANIFICADOR`. En la rama, al Core le envía `OP_TAM_PAGINA {uint32}`. Después llama a `atender_peticiones` |
+| `atender_cliente(void*)` | Handshake: loguea `## Módulo: CORE/PLANIFICADOR`. Al Core le envía `OP_TAM_PAGINA {uint32}`. Después llama a `atender_peticiones` |
 | `atender_peticiones(socket, handshake)` | Loop `recibir_buffer` → `procesar_peticion_core` o `procesar_peticion_planificador` según quién se conectó. También maneja `OP_TEST` |
 | `procesar_peticion_core(socket, op, buffer)` | `OP_FETCH_INSTRUCCION`, `OP_OBTENER_MARCO`, `OP_DESLOCKEAR_PAGINAS`, `OP_READ_MEM`, `OP_WRITE_MEM` |
 | `procesar_peticion_planificador(socket, op, buffer)` | `OP_CREAR_JOB`, `OP_FINALIZAR_JOB`, `OP_ASIGNAR_ESPACIO`, `OP_LIBERAR_ESPACIO`, `OP_DESLOCKEO_PAGINAS`, `OP_CARGA_PAGINA`, `OP_LEER_DATOS`, `OP_ESCRIBIR_DATOS` |
