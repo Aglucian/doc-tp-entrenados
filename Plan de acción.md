@@ -88,28 +88,23 @@ Responsable: todos
 
 ---
 
-## Fase F: Checkpoints (Check 4 · 14/11)
+## Fase F: Checkpoints (Check 4 · 14/11) ✅
+Probado en los 5 servidores con `kill -9` al Storage → [[Check 4 2026-11-14]]
 
-### Storage (D4)
-- [ ] Implementar en `operaciones.c` las operaciones `GUARDAR`, `CARGAR` y `ELIMINAR_CHECKPOINT` sobre la FAT. Hoy responden `responder_no_implementado`.
-  - Reutilizar la lógica de `consola.c` (WRITE/CAT/RM) moviéndola a `filesystem.c`
-- [ ] Journaling y recuperación ante `kill -9`
-- [ ] Respetar `RETARDO_ACCESO_BLOQUE` y `RETARDO_COMMIT`
+### Storage (D4) · PR #22
+- [x] `GUARDAR`, `CARGAR` y `ELIMINAR_CHECKPOINT` sobre la FAT (la lógica de la consola pasó a `filesystem.c`)
+- [x] Journaling y recuperación ante `kill -9`
+- [x] Respetar `RETARDO_ACCESO_BLOQUE` y `RETARDO_COMMIT`
+- [x] Cierre limpio con Ctrl-C / SIGTERM (`2a9b3b3`)
 
-### Planificador (D2)
-- [ ] `SAVE_CHECKPOINT`:
-  - BLOCKED → `LEER_DATOS` por tramos → `OP_GUARDAR_CHECKPOINT {nombre, contenido}`
-  - sin espacio → finalizar
-  - ok → deslockeo → READY
-- [ ] `LOAD_CHECKPOINT`:
-  - BLOCKED → `OP_CARGAR_CHECKPOINT {nombre}`
-  - no existe → finalizar
-  - ok → `ESCRIBIR_DATOS` → deslockeo → READY
-- [ ] `DELETE_CHECKPOINT`:
-  - BLOCKED → `OP_ELIMINAR_CHECKPOINT {nombre}`
-  - si no existe, **solo loguear**
-  - sin deslockeo → READY
-- [ ] Si se cae Storage: log y finalización limpia, sin colgarse
+### Planificador (D2) · PR #21
+- [x] `SAVE_CHECKPOINT`: leer por tramos → Storage → deslockeo → READY. Sin espacio: `SIN_ESPACIO_STORAGE`
+- [x] `LOAD_CHECKPOINT`: Storage → escribir por tramos → deslockeo → READY. Si no existe: `CHECKPOINT_INEXISTENTE`
+- [x] `DELETE_CHECKPOINT`: si no existe, **solo se informa**; no deslockea
+- [x] Si se cae el Storage: log y el Job finaliza con `ERROR_STORAGE`, sin colgarse
+
+### Pendiente
+- [ ] Suite oficial del CP4 cuando la publique la cátedra
 
 ## Fase G: Cierre (28/11 → 19/12)
 - [x] Estadísticas completas en el log de fin de Job (memoria dinámica máxima agregada en `e5fd060`)

@@ -33,6 +33,9 @@ Persiste los **checkpoints** de los Jobs sobre un filesystem propio, `FAT32_TRAI
 >
 > Se probó con Ctrl-C en tmux, con SIGTERM y con la Mini Entrenamiento distribuida: 0 errores.
 
+> [!success] Check 4 probado
+> Guardar, Cargar y Eliminar, journal y recuperación con `kill -9` en los 5 servidores: ver [[Check 4 2026-11-14]].
+
 > [!todo] Check 4
 > La lógica de `WRITE`, `CAT` y `RM` de la consola es casi la misma que necesitan `GUARDAR`, `CARGAR` y `ELIMINAR_CHECKPOINT`. Conviene moverla a funciones de `filesystem.c` (`fs_escribir`, `fs_leer`, `fs_eliminar`) que usen tanto la consola como `operaciones.c`. Ver [[Plan de acción#Fase F: Checkpoints (Check 4 · 14/11)]].
 
