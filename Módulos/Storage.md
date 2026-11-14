@@ -24,8 +24,14 @@ Persiste los **checkpoints** de los Jobs sobre un filesystem propio, `FAT32_TRAI
 | Journaling y recuperación | ❌ | ❌ |
 | Retardos `RETARDO_ACCESO_BLOQUE` / `RETARDO_COMMIT` | ❌ | ? (revisar en `consola.c`) |
 
-> [!warning] Apagado
-> Cuando recibe Ctrl-C (SIGINT), loguea `[ERROR] Falló accept(): Interrupted system call` y `Error al aceptar conexión entrante`. Lo detectó la [[Despliegue distribuido|prueba distribuida]] del 14/11. Habría que manejar la señal y cerrar sin error.
+> [!success] Apagado limpio (`2a9b3b3`, en `develop`)
+> Antes, con Ctrl-C se logueaba `[ERROR] Falló accept(): Interrupted system call`: el manejador de readline interrumpía el `accept()`. Ahora:
+> - **`senales.c`:** SIGINT/SIGTERM marcan el cierre, y `crear_hilo_sin_senales()` crea la consola y los clientes con esas señales bloqueadas, así la señal la recibe el hilo principal.
+> - `rl_catch_signals = 0`, para que readline no maneje las señales, y `rl_cleanup_after_signal()` al salir.
+> - Al cerrar se loguea en INFO `Se recibió una señal de cierre…` y `Storage finalizado`.
+> - En utils, `esperar_cliente` ya no loguea `EINTR` como error (afecta a todos los servidores).
+>
+> Se probó con Ctrl-C en tmux, con SIGTERM y con la Mini Entrenamiento distribuida: 0 errores.
 
 > [!todo] Check 4
 > La lógica de `WRITE`, `CAT` y `RM` de la consola es casi la misma que necesitan `GUARDAR`, `CARGAR` y `ELIMINAR_CHECKPOINT`. Conviene moverla a funciones de `filesystem.c` (`fs_escribir`, `fs_leer`, `fs_eliminar`) que usen tanto la consola como `operaciones.c`. Ver [[Plan de acción#Fase F: Checkpoints (Check 4 · 14/11)]].

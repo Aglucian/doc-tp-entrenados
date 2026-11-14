@@ -14,7 +14,6 @@ Volver a [[00 - Inicio]] · Ver también [[Estado de ramas]], [[Protocolo]]
 > El bug de `FREE`/`ALLOC` del Core se resolvió en el PR #19.
 > Pendientes:
 > - **Check 4 (checkpoints), que es hoy**
-> - SIGINT del Storage
 
 Roles (de `doc/distribucion-equipo.md`):
 - **D1**: Planificador, planificación
@@ -118,7 +117,7 @@ Responsable: todos
 - [ ] Helgrind/DRD en pruebas de stress
 - [x] Scripts de deploy y configs por máquina → [[Despliegue distribuido]] (`deploy/desplegar.sh`, `18d367d`)
 - [ ] Más pruebas distribuidas (ver [[Despliegue distribuido#Próximas pruebas]])
-- [ ] **[Storage, D4]** Manejar SIGINT sin loguear `Falló accept()` al apagarse
+- [x] **[Storage, D4]** Manejar SIGINT/SIGTERM sin loguear errores al apagarse (`2a9b3b3`)
 - [ ] Cada integrante debe poder explicar cualquier módulo en el coloquio
 
 ## Checklist de logs obligatorios del Planificador

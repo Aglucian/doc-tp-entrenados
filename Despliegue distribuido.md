@@ -118,7 +118,7 @@ Para una prueba nueva alcanza con copiar la carpeta y cambiar las IPs y las clav
 | Errores | ✅ 0 (los 2 del Storage son del apagado) |
 
 > [!note] Observaciones
-> - **El Storage loguea errores al apagarse:** `Falló accept(): Interrupted system call` cuando recibe Ctrl-C. No afecta la prueba, pero conviene que maneje SIGINT de forma limpia ([[Storage]]).
+> - ~~**El Storage loguea errores al apagarse**~~: resuelto en `2a9b3b3`. Al repetir la prueba distribuida dio 0 errores en los 6 logs ([[Storage]]).
 > - **El Core 2 quedó sin trabajo:** con un solo Job, el Core 1 siempre está libre primero. Para usar los 2 Cores hace falta una prueba con varios Jobs.
 
 ## Próximas pruebas
