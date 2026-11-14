@@ -15,7 +15,6 @@ Volver a [[00 - Inicio]] · Ver también [[Estado de ramas]], [[Protocolo]]
 > Pendientes:
 > - **Check 4 (checkpoints), que es hoy**
 > - SIGINT del Storage
-> - llevar `deploy/` a `develop`
 
 Roles (de `doc/distribucion-equipo.md`):
 - **D1**: Planificador, planificación

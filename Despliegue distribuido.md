@@ -9,7 +9,7 @@ commit: 18d367d
 
 Volver a [[00 - Inicio]] · Ver [[Plan de acción]] · Pruebas: [[Mini Entrenamiento 2026-11-14]]
 
-El enunciado dice que la cantidad de computadoras y la distribución de los procesos "será definida en cada uno de los tests" y que puede cambiar en la evaluación. **Automatizar el despliegue es responsabilidad del grupo.** Para eso está `deploy/desplegar.sh`, en el repo del TP (commit `18d367d`, rama `planificador`).
+El enunciado dice que la cantidad de computadoras y la distribución de los procesos "será definida en cada uno de los tests" y que puede cambiar en la evaluación. **Automatizar el despliegue es responsabilidad del grupo.** Para eso está `deploy/desplegar.sh`, en el repo del TP (commit `18d367d`, en `develop` desde el PR #20).
 
 ## Servidores de prueba
 | IP | Uso habitual | Sistema |
