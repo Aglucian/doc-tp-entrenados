@@ -193,16 +193,20 @@ def item_lista(linea):
     m = RE_ITEM.match(linea)
     sangria, marca, texto = len(m.group(1).replace("\t", "  ")), m.group(2), m.group(3)
     nivel = sangria // 2
+    # La viñeta se dibuja aparte del párrafo: no admite markup, así que el color va en el estilo
+    # y la fuente tiene que ser DejaVu (la de por defecto, Helvetica, no tiene ☐ ni ☑).
+    color = colors.black
     if texto.startswith("[ ] "):
         vineta, texto = "☐", texto[4:]
     elif texto[:4].lower() == "[x] ":
-        vineta, texto = '<font color="#2E7D32">☑</font>', texto[4:]
+        vineta, texto, color = "☑", texto[4:], colors.HexColor("#2E7D32")
     elif marca[0].isdigit():
         vineta = marca
     else:
         vineta = "•" if nivel == 0 else ("◦" if nivel == 1 else "▪")
-    estilo = ParagraphStyle("li", parent=E["p"], leftIndent=12 + nivel * 12, bulletIndent=2 + nivel * 12, spaceAfter=1.5)
-    return Paragraph(inline(texto), estilo, bulletText=None if False else vineta)
+    estilo = ParagraphStyle("li", parent=E["p"], leftIndent=12 + nivel * 12, bulletIndent=2 + nivel * 12, spaceAfter=1.5,
+                            bulletFontName="Sans", bulletFontSize=E["p"].fontSize, bulletColor=color)
+    return Paragraph(inline(texto), estilo, bulletText=vineta)
 
 
 def bloques(lineas, ancho, toc_nota=None):
