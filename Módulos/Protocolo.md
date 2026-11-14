@@ -2,7 +2,7 @@
 tags: [tp-so, entrenados, protocolo]
 archivo: utils/src/utils/protocolo_entrenados.h
 version: 1
-actualizado: 2026-10-30
+actualizado: 2026-11-14
 ---
 
 # Protocolo
@@ -24,7 +24,7 @@ Volver a [[00 - Inicio]] · Implementación: [[Utils]]
 - `t_modulo`: `PLANIFICADOR=0`, `CORE=1`, `PLACA=2`, `STORAGE=3`
 - `id_core` se usa solo si el que se conecta es un Core
 - Prueba del Check 1: `OP_TEST` → `OP_TEST_OK`
-- *(rama `placa`/`core`)*: después del handshake de un Core, la Placa envía `OP_TAM_PAGINA {uint32 tam_pagina}`
+- Después del handshake de un Core, la Placa envía `OP_TAM_PAGINA {uint32 tam_pagina}`
 
 ## Opcodes
 
@@ -43,7 +43,7 @@ Volver a [[00 - Inicio]] · Implementación: [[Utils]]
 ### Planificador → Storage (`0x30`–`0x3F`)
 | Opcode | Valor | Pedido | Respuesta |
 | --- | --- | --- | --- |
-| `OP_GUARDAR_CHECKPOINT` | 0x30 | `string nombre, bytes contenido` | 0x31 `{bool ok}` (`false` = sin espacio) |
+| `OP_GUARDAR_CHECKPOINT` | 0x30 | `string nombre, bytes contenido` | 0x31 `{bool ok}` (`false` = sin espacio, directorio lleno o nombre inválido) |
 | `OP_CARGAR_CHECKPOINT` | 0x32 | `string nombre` | 0x33 `{bool ok, bytes contenido}` (`false` = no existe) |
 | `OP_ELIMINAR_CHECKPOINT` | 0x34 | `string nombre` | 0x35 `{bool ok}` (`false` = no existe) |
 
@@ -63,20 +63,20 @@ Volver a [[00 - Inicio]] · Implementación: [[Utils]]
 | `OP_OBTENER_MARCO` | 0x62 | `jid, nro_pagina` | 0x63 `{bool ok, uint32 marco}` (`false` = page fault; si da `true` lockea la página) |
 | `OP_READ_MEM` | 0x64 | `jid, dir_fisica, tamaño` | 0x65 `{bool ok, bytes contenido}` |
 | `OP_WRITE_MEM` | 0x66 | `jid, dir_fisica, bytes contenido` | 0x67 `{bool ok}` |
-| `OP_TAM_PAGINA` *(rama)* | 0x68 | Placa → Core después del handshake | `uint32 tam_pagina` |
-| `OP_DESLOCKEAR_PAGINAS` *(rama)* | 0x69 | `jid` | 0x6A `{bool ok}` |
+| `OP_TAM_PAGINA` | 0x68 | Placa → Core después del handshake | `uint32 tam_pagina` |
+| `OP_DESLOCKEAR_PAGINAS` | 0x69 | `jid` | 0x6A `{bool ok}` |
 
 > [!warning] Dos opcodes de deslockeo
 > `OP_DESLOCKEO_PAGINAS` (0x1B) lo usa el Planificador y `OP_DESLOCKEAR_PAGINAS` (0x69) lo usa el Core. Hacen lo mismo, pero cada uno queda en el rango de opcodes de su emisor. Mantenerlos así y no confundirlos.
 
 ## Payloads Core → Planificador
-Detalle de `OP_SYSCALL` según `origin/core`. Todas empiezan con `{uint32 id, uint32 jid, contexto}`, y el contexto ya viene con el `pc` avanzado.
+Detalle de `OP_SYSCALL` tal como lo arma el Core en `develop`. Todas empiezan con `{uint32 id, uint32 jid, contexto}`, y el contexto ya viene con el `pc` avanzado.
 
 | Syscall | Id | Parámetros extra | ¿Bloquea? | Qué espera el Core |
 | --- | --- | --- | --- | --- |
 | `INIT_JOB` | 0 | `string archivo` | no | `OP_RSP_SYSCALL {ok, jid_nuevo}` |
-| `ALLOC` | 1 | `uint32 tamaño` | no | `OP_RSP_SYSCALL {ok, dir_logica}` ⚠️ falta el `case` en el Core |
-| `FREE` | 2 | `uint32 dir_logica` | no | `OP_RSP_SYSCALL {ok, 0}` ⚠️ falta el `case` en el Core |
+| `ALLOC` | 1 | `uint32 tamaño` | no | `OP_RSP_SYSCALL {ok, dir_logica}` (con `ok=false` el Job ya fue finalizado y el Core lo abandona) |
+| `FREE` | 2 | `uint32 dir_logica` | no | `OP_RSP_SYSCALL {ok, 0}` (con `ok=false` el Job sigue) |
 | `LOAD_BATCH` | 3 | `string archivo, uint32 tamaño, uint32 n, (dir_fisica, tam)×n` | **sí** | nada: el Core suelta el Job |
 | `LABEL` | 4 | `uint32 tamaño, uint32 n, (dir_fisica, tam)×n` | **sí** | nada |
 | `REPORT` | 5 | `uint32 tamaño, uint32 n, (dir_fisica, tam)×n` | **sí** | nada |
@@ -85,10 +85,15 @@ Detalle de `OP_SYSCALL` según `origin/core`. Todas empiezan con `{uint32 id, ui
 | `DELETE_CHECKPOINT` | 8 | `string nombre` | **sí** | nada |
 | `EXIT` | 9 | — | — | nada (en la práctica el Core usa `OP_DEVOLUCION` con `EXIT`) |
 
-> [!info] Cómo responde el Planificador (rama `planificador`)
+> [!info] Cómo responde el Planificador
 > - `ALLOC` sin espacio: responde `{false, 0}` y **finaliza el Job** (`OUT_OF_MEMORY`). El Core tiene que abandonarlo sin devolverlo.
 > - `FREE` con una dirección inválida: responde `{false, 0}` y el Job sigue.
 > - Syscalls de servicio malformadas (por ejemplo, si la suma de los tramos no es igual al tamaño): el Job finaliza con `ERROR_SYSCALL`.
+> - Checkpoints (las tres bloquean, sin respuesta al Core):
+>   - `SAVE` rechazado por el Storage: `SIN_ESPACIO_STORAGE`
+>   - `LOAD` de uno inexistente: `CHECKPOINT_INEXISTENTE`
+>   - `DELETE` de uno inexistente: **solo se informa** y el Job sigue
+>   - si se cae el Storage en medio del pedido: `ERROR_STORAGE`
 
 > [!important] Páginas lockeadas
 > En las syscalls con tramos, el Core ya tradujo las direcciones y **las páginas quedan lockeadas** en la Placa. El Planificador tiene que mandar `OP_DESLOCKEO_PAGINAS {jid}` cuando termina el servicio, también si hubo un error.

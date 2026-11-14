@@ -7,24 +7,24 @@ actualizado: 2026-11-14
 
 Volver a [[00 - Inicio]] · Ver [[Plan de acción]]
 
-Las ramas se comparan contra `origin/develop` (`03d9deb`) después de un `git fetch` el **14/11**.
+Las ramas se comparan contra `origin/develop` (`3a0e4c3`) después de un `git fetch` el **14/11**.
 
 | Rama | Adelante / atrás de `develop` | Contenido | Acción |
 | --- | --- | --- | --- |
-| `develop` | — | Check 3 integrado: #12 core, #14 placa, #15 planificador, #17 y #19 (ALLOC/FREE del core) + #20 despliegue + `2a9b3b3` señales del Storage + **Check 4: #21 Planificador y #22 Storage** + `5282eb3`/`896a387`/`03d9deb` (prueba de checkpoints, Placa y log de contexto, runner de la cátedra) | base |
-| `main` | 0 / −6 | Último merge: #16 (develop → main, 31/10). Le faltan #17, #19 y #20 | mergear `develop` → `main` cuando se cierre el check |
-| `origin/core` | 0 / −1 | Ya está en `develop` (#19) | — |
-| `origin/placa` | 0 / −9 | Ya está en `develop` (#14) | — |
-| `origin/planificador` | 0 / −3 | Ya está en `develop` (#20) | — |
-| `origin/storage` | 0 / −21 | Ya está en `develop` | traer `develop` antes del Check 4 |
-| `utils` | 0 / −54 | Vieja | borrar o recrear desde `develop` |
+| `develop` | — | Checks 2, 3 y 4 completos: #12 core, #14 placa, #15 planificador, #17/#19 ALLOC/FREE del core, #20 despliegue, #21/#22 checkpoints y journaling. Commits directos: `2a9b3b3` señales del Storage, `5282eb3` prueba de checkpoints, `896a387` Placa con rutas absolutas y log de contexto, `03d9deb` runner de la cátedra, `3a0e4c3` repartos | base |
+| `main` | 0 / −15 | Último merge: #16 (develop → main, 31/10). **Le falta todo el Check 4** | **mergear `develop` → `main` antes de la entrega** |
+| `origin/core` | 0 / −12 | Ya está en `develop` (#19) | — |
+| `origin/placa` | 0 / −22 | Ya está en `develop` (#14) | — |
+| `origin/planificador` | 0 / −7 | Ya está en `develop` (#21) | — |
+| `origin/storage` | 0 / −7 | Ya está en `develop` (#22) | — |
+| `utils` | 0 / −67 | Vieja | borrar o recrear desde `develop` |
 
-No hay PRs abiertos.
+No hay PRs abiertos. Ninguna rama tiene commits que no estén en `develop`.
 
 > [!info] El despliegue distribuido (`deploy/`) está en `develop` desde el PR #20. Ver [[Despliegue distribuido]].
 
 > [!info] Ramas locales
-> El 14/11, después del #19, `develop` y `core` locales se actualizaron con un fast-forward a `713da07`. Después del #20, `planificador` también quedó en `04b8bd3` con un fast-forward.
+> En esta máquina se trabaja sobre `develop` (`3a0e4c3`, igual al remoto). Las ramas de cada módulo quedaron como estaban después de sus PRs.
 
 ## Conflicto de `protocolo_entrenados.h` ✅ resuelto
 `core` y `placa` agregaban los mismos opcodes (`OP_TAM_PAGINA`, `OP_DESLOCKEAR_PAGINAS`, `OP_RSP_DESLOCKEAR_PAGINAS`). En `develop` aparecen una sola vez (`0x68`–`0x6A`).

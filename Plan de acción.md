@@ -8,12 +8,12 @@ proximo_hito: Entrega 1 (28/11)
 
 Volver a [[00 - Inicio]] · Ver también [[Estado de ramas]], [[Protocolo]]
 
-> [!warning] Situación al 14/11
-> **Check 3 integrado.** Los PRs #12 (core), #14 (placa), #15 (planificador) y #17 (fix ALLOC/FREE del core) están en `develop`, y los 5 módulos compilan sin warnings.
-> La [[Mini Entrenamiento 2026-11-14|Mini Entrenamiento]] con los módulos reales salió bien: 9 page faults, 5 reemplazos con Offload y 0 errores.
-> El bug de `FREE`/`ALLOC` del Core se resolvió en el PR #19.
-> **Check 4 integrado** (#21 Planificador y #22 Storage, con journaling) y probado con `kill -9` en los 5 servidores ([[Despliegue distribuido]]).
-> **Suite de la cátedra:** CP2 y CP3 pasan completos ([[Suite cátedra 2026-11-14]]).
+> [!success] Situación al 14/11
+> - **Checks 2, 3 y 4 integrados en `develop`** (`3a0e4c3`). Los 5 módulos compilan sin warnings.
+> - **Suite de la cátedra:** el CP2 (rápido y con los retardos reales) y el CP3 pasan completos, en los 5 servidores y con 4 repartos de módulos. Ver [[Suite cátedra 2026-11-14]].
+> - **Check 4:** checkpoints y journaling, con la recuperación después de un `kill -9` probada en los 5 servidores. Ver [[Check 4 2026-11-14]].
+>
+> **Lo que falta antes de la entrega del 28/11:** mergear `develop` → `main`, correr la suite oficial del CP4 cuando la publiquen y las tareas abiertas de abajo.
 
 Roles (de `doc/distribucion-equipo.md`):
 - **D1**: Planificador, planificación
@@ -32,7 +32,7 @@ Responsable: todos / D5
 - [x] Mergear `origin/storage` → `develop` (`764b9c3`)
 - [x] `make` en los 5 módulos sin warnings (14/11)
 - [x] PR `planificador` → `develop` (#15, mergeado el 30/10)
-- [ ] Repetir la prueba del Check 2 (FIFO/RR/HRRN con NOOP/SET/SUM/SUB/JNZ) para descartar regresiones
+- [x] Repetir la prueba del Check 2 para descartar regresiones (la suite de la cátedra del CP2 pasa, con los retardos reales también)
 - [ ] Actualizar la tabla §5.1 de `doc/planificador.md` con los payloads reales (ver [[Protocolo#Payloads Core → Planificador]])
 
 ## Fase B: Planificador, page fault y BLOCKED (Check 3) ✅
@@ -80,10 +80,11 @@ Responsable: todos
 
 - [x] Script *Mini Entrenamiento*: `ALLOC` + `LOAD_BATCH` + `FORWARD/BACKWARD/UPDATE` + `REPORT` → [[Mini Entrenamiento 2026-11-14]]
 - [x] Revisar en los logs: page faults en varias páginas, Jobs que pasan por BLOCKED, reportes hex correctos
-- [ ] Correr con `valgrind --leak-check=full` en Planificador y Placa (Planificador contra mocks: ✅ 0 bytes de fuga confirmada)
-- [ ] Probar con LRU y con CLOCK-M en la Placa, y con FIFO, RR y HRRN en el Planificador (hecho: CLOCK-M + RR)
+- [ ] Correr con `valgrind --leak-check=full` en la Placa y en el Core (Planificador contra mocks ✅, Storage ✅: 0 bytes de fuga confirmada)
+- [x] LRU y CLOCK-M en la Placa, FIFO y RR en el Planificador (suite de la cátedra)
+- [ ] HRRN con los módulos reales (la cátedra no lo evalúa en CP2 ni en CP3; solo está probado en el Check 2)
 - [x] Prueba distribuida en 5 servidores (un módulo por máquina) → [[Despliegue distribuido#Primera corrida distribuida (14/11)]]
-- [ ] Varios Jobs y varios Cores a la vez
+- [x] Varios Jobs y varios Cores a la vez (suite de la cátedra: CP2 04, CP3 06, 07 y 09)
 - [ ] Decidir qué hacer con el livelock de rangos más grandes que la memoria (ver [[Mini Entrenamiento 2026-11-14#Hallazgos]])
 
 ---
@@ -108,10 +109,11 @@ Probado en los 5 servidores con `kill -9` al Storage → [[Check 4 2026-11-14]]
 
 ## Fase G: Cierre (28/11 → 19/12)
 - [x] Estadísticas completas en el log de fin de Job (memoria dinámica máxima agregada en `e5fd060`)
-- [ ] `SIGINT`/`SIGTERM` con cierre ordenado en los 4 módulos
+- [ ] `SIGINT`/`SIGTERM` con cierre ordenado en los 4 módulos (Storage ✅ `2a9b3b3`; faltan Planificador, Placa y Core)
 - [ ] Helgrind/DRD en pruebas de stress
 - [x] Scripts de deploy y configs por máquina → [[Despliegue distribuido]] (`deploy/desplegar.sh`, `18d367d`)
-- [ ] Más pruebas distribuidas (ver [[Despliegue distribuido#Próximas pruebas]])
+- [x] Pruebas distribuidas: 5 servidores y 4 repartos de módulos (ver [[Suite cátedra 2026-11-14#Repartos de módulos entre servidores]])
+- [ ] **Mergear `develop` → `main`** (está en el #16, del 31/10)
 - [x] **[Storage, D4]** Manejar SIGINT/SIGTERM sin loguear errores al apagarse (`2a9b3b3`)
 - [ ] Cada integrante debe poder explicar cualquier módulo en el coloquio
 

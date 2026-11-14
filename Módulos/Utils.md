@@ -3,7 +3,7 @@ tags: [tp-so, entrenados, modulo, utils]
 modulo: utils
 rama: develop
 responsables: [D5]
-actualizado: 2026-10-29
+actualizado: 2026-11-14
 ---
 
 # Utils
@@ -22,7 +22,7 @@ Al hacer `make` en cualquier módulo, primero se recompila `utils`.
 | Función | Descripción |
 | --- | --- |
 | `crear_servidor(puerto, logger)` | `getaddrinfo` + `socket` + `SO_REUSEADDR` + `bind` + `listen` |
-| `esperar_cliente(socket_servidor, logger)` | `accept` |
+| `esperar_cliente(socket_servidor, logger)` | `accept`. Si lo interrumpe una señal (`EINTR`) no lo loguea como error y deja que decida quien llama, por ejemplo para cerrar el módulo (`2a9b3b3`) |
 | `crear_conexion(ip, puerto, logger)` | `connect` al servidor |
 | `cerrar_conexion(socket)` | `close` si es distinto de -1 |
 

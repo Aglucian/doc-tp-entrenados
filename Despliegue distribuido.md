@@ -68,6 +68,15 @@ deploy/desplegar.sh deploy/pruebas/<prueba> <acción>
 | `detener` | Manda Ctrl-C a cada módulo y cierra las sesiones |
 | `logs` | Trae logs, configs y reportes a `deploy/resultados/<prueba>-<fecha>/`, con un resumen de errores y warnings |
 | `ejecutar` | `iniciar` + esperar `JOBS_ESPERADOS` (máximo `TIEMPO_MAXIMO`) + `detener` + `logs` |
+| `matar <módulo>` | `kill -9` solo del binario (`placa`, `storage`, `planificador`, `core-<id>`) |
+| `levantar <módulo>` | Lo vuelve a arrancar con su config y sus datos, sin borrar nada |
+| `esperar <módulo> <texto> [s]` | Espera a que `<texto>` aparezca en el log del módulo (sirve para sincronizar, por ejemplo matar después del COMMIT) |
+
+Opciones de `iniciar` y `ejecutar`:
+- `--job <script>`: otro script inicial.
+- `--conservar-storage`: no borra el volumen ni el journal de la corrida anterior.
+
+Las usa `deploy/pruebas/checkpoints/correr.sh` ([[Check 4 2026-11-14]]).
 
 ### Sesiones de tmux
 Cada módulo corre en una sesión: `tp-placa`, `tp-storage`, `tp-planificador`, `tp-core-<id>`. Para el **Labeler** o la **consola del Storage**:
@@ -136,9 +145,10 @@ deploy/catedra.sh checkpoint_2 todos --rapido
 - Cada servidor se puede pisar desde el entorno: `PLACA=… STORAGE=… PLANIFICADOR=… CORES_HOSTS="…" deploy/catedra.sh …`
 
 ## Próximas pruebas
-- [ ] Varios Jobs (con `INIT_JOB`) para que trabajen los 2 Cores
-- [ ] LRU contra CLOCK-M con el mismo script
-- [ ] FIFO y HRRN en el Planificador
-- [ ] Desconexión de un Core en medio de la ejecución (`tmux kill-session` sobre `tp-core-2`)
+- [x] Varios Jobs (con `INIT_JOB`) para que trabajen los 2 Cores (suite de la cátedra)
+- [x] LRU contra CLOCK-M con el mismo script (CP3 04 y 05)
+- [x] FIFO en el Planificador (CP2 02)
+- [ ] HRRN con los módulos reales
+- [ ] Desconexión de un Core en medio de la ejecución con los módulos reales (`deploy/desplegar.sh … matar core-2`); hasta ahora solo se probó con mocks
 - [x] Todo en una sola máquina y distribuciones mixtas (4 repartos ✅)
-- [ ] Checkpoints (Check 4): `SAVE` en un Job y `LOAD` en otro, y Storage caído
+- [x] Checkpoints (Check 4): `SAVE` en un Job y `LOAD` en otro, y Storage caído → [[Check 4 2026-11-14]]

@@ -1,14 +1,14 @@
 ---
 tags: [tp-so, entrenados, modulo, placa]
 modulo: placa
-rama: develop + origin/placa
+rama: develop
 responsables: [D3]
-actualizado: 2026-10-29
+actualizado: 2026-11-14
 ---
 
 # Placa
 
-Volver a [[00 - Inicio]] · Depende de [[Utils]] y [[Protocolo]] · La usan el [[Planificador]] y los [[Core]]
+Volver a [[00 - Inicio]] · Depende de [[Utils]] y [[Protocolo]] · La usan el [[Planificador]] y los [[Core]] · Pruebas: [[Suite cátedra 2026-11-14]]
 
 Es la memoria del sistema. Se ocupa de:
 - guardar las instrucciones de cada Job (leídas de `PATH_INSTRUCCIONES`)
@@ -20,23 +20,28 @@ Es la memoria del sistema. Se ocupa de:
 **Ejecución:** `./bin/placa [Archivo Config]`
 
 ## Estado
-| Funcionalidad | `develop` | `origin/placa` |
+Todo en `develop`.
+
+| Funcionalidad | Estado | Commit / PR |
 | --- | --- | --- |
-| Servidor multihilo (Planificador + N Cores) | ✅ | ✅ |
-| Crear / finalizar Job, fetch de instrucción | ✅ | ✅ |
-| Envío de `OP_TAM_PAGINA` al Core después del handshake | ❌ | ✅ |
-| Marcos, tablas de páginas, reservas (ALLOC/FREE) | ❌ | ✅ |
-| Obtener marco (page fault si no está presente) | ❌ | ✅ |
-| Carga de página con reemplazo LRU / CLOCK-M y offload | ❌ | ✅ |
-| Lectura y escritura física, deslockeo | ❌ | ✅ |
-| Retardos `RETARDO_MEMORIA` / `RETARDO_OFFLOAD` | parcial | ✅ |
+| Servidor multihilo (Planificador + N Cores) | ✅ | Check 1 |
+| Crear / finalizar Job, fetch de instrucción; Job inicial **relativo o con ruta absoluta** | ✅ | Check 2 + `896a387` |
+| Envío de `OP_TAM_PAGINA` al Core después del handshake | ✅ | #14 |
+| Marcos, tablas de páginas, reservas (ALLOC/FREE) | ✅ | #14 |
+| Obtener marco (page fault si no está presente) | ✅ | #14 |
+| Carga de página con reemplazo LRU / CLOCK-M y offload | ✅ | #14 |
+| Lectura y escritura física, deslockeo | ✅ | #14 |
+| Retardos `RETARDO_MEMORIA` (también en cada FETCH) / `RETARDO_OFFLOAD` | ✅ | #14 |
+
+> [!success] Probado
+> En la suite de la cátedra del CP3, el LRU elige las víctimas en el orden que espera el README (0→1→2→3). CLOCK-M, el aislamiento entre Jobs, el Offload lleno y el page locking del 06 también pasan: ninguna página del `LABEL` fue víctima. Ver [[Suite cátedra 2026-11-14]].
 
 ---
 
 ## `main.c` / `main.h`
 | Elemento | Descripción |
 | --- | --- |
-| `main(argc, argv)` | Carga el config en `t_config_placa`, inicializa las instrucciones (y en la rama `inicializar_memoria`) y arranca `iniciar_servidor_placa` |
+| `main(argc, argv)` | Carga el config en `t_config_placa`, inicializa las instrucciones y la memoria (`inicializar_memoria`) y arranca `iniciar_servidor_placa` |
 | `t_config_placa` | `puerto_escucha, log_level, tam_memoria, tam_pagina, retardo_memoria, algoritmo_reemplazo, path_instrucciones, path_offload, tam_offload, retardo_offload` |
 | globales | `logger`, `config`, `config_placa` |
 
@@ -46,10 +51,10 @@ Es la memoria del sistema. Se ocupa de:
 | `iniciar_servidor_placa()` | `crear_servidor` y loop de `accept`, con un hilo `atender_cliente` por conexión |
 | `atender_cliente(void*)` | Handshake: loguea `## Módulo: CORE/PLANIFICADOR`. En la rama, al Core le envía `OP_TAM_PAGINA {uint32}`. Después llama a `atender_peticiones` |
 | `atender_peticiones(socket, handshake)` | Loop `recibir_buffer` → `procesar_peticion_core` o `procesar_peticion_planificador` según quién se conectó. También maneja `OP_TEST` |
-| `procesar_peticion_core(socket, op, buffer)` | `OP_FETCH_INSTRUCCION` y en la rama además `OP_OBTENER_MARCO`, `OP_DESLOCKEAR_PAGINAS`, `OP_READ_MEM`, `OP_WRITE_MEM` |
-| `procesar_peticion_planificador(socket, op, buffer)` | `OP_CREAR_JOB`, `OP_FINALIZAR_JOB` y en la rama además `OP_ASIGNAR_ESPACIO`, `OP_LIBERAR_ESPACIO`, `OP_DESLOCKEO_PAGINAS`, `OP_CARGA_PAGINA`, `OP_LEER_DATOS`, `OP_ESCRIBIR_DATOS` |
-| `atender_lectura(socket, buffer, op_rsp)` *(rama)* | `{jid, dir_fisica, tamaño}` → `{bool ok, bytes contenido}`. Lo usan el Core y el Planificador |
-| `atender_escritura(socket, buffer, op_rsp)` *(rama)* | `{jid, dir_fisica, bytes contenido}` → `{bool ok}` |
+| `procesar_peticion_core(socket, op, buffer)` | `OP_FETCH_INSTRUCCION`, `OP_OBTENER_MARCO`, `OP_DESLOCKEAR_PAGINAS`, `OP_READ_MEM`, `OP_WRITE_MEM` |
+| `procesar_peticion_planificador(socket, op, buffer)` | `OP_CREAR_JOB`, `OP_FINALIZAR_JOB`, `OP_ASIGNAR_ESPACIO`, `OP_LIBERAR_ESPACIO`, `OP_DESLOCKEO_PAGINAS`, `OP_CARGA_PAGINA`, `OP_LEER_DATOS`, `OP_ESCRIBIR_DATOS` |
+| `atender_lectura(socket, buffer, op_rsp)` | `{jid, dir_fisica, tamaño}` → `{bool ok, bytes contenido}`. Lo usan el Core y el Planificador |
+| `atender_escritura(socket, buffer, op_rsp)` | `{jid, dir_fisica, bytes contenido}` → `{bool ok}` |
 | `aplicar_retardo_memoria()` *(static)* | `usleep(RETARDO_MEMORIA)` |
 
 ## `instrucciones.c` / `instrucciones.h`
@@ -59,13 +64,13 @@ Es la memoria del sistema. Se ocupa de:
 | Función | Descripción |
 | --- | --- |
 | `inicializar_instrucciones()` | Crea la lista de `t_job_instrucciones` |
-| `crear_job(jid, nombre_archivo)` | Lee `PATH_INSTRUCCIONES/<archivo>` línea por línea y lo guarda. Log `## JID: <j> - Job Creado`. En la rama además llama a `crear_memoria_job` |
+| `crear_job(jid, nombre_archivo)` | Lee el script (`PATH_INSTRUCCIONES/<archivo>`, o la ruta tal cual si es absoluta, `armar_ruta`) línea por línea y lo guarda. Log `## JID: <j> - Job Creado`. Además llama a `crear_memoria_job` |
 | `obtener_instruccion(jid, pc)` | Devuelve una copia de la línea `pc`. Log `## JID: … - Obtener instrucción: … - Instrucción: …` |
-| `finalizar_job(jid)` | Libera las instrucciones (y en la rama la memoria del Job). Log `Job Finalizado` |
+| `finalizar_job(jid)` | Libera las instrucciones y la memoria del Job (`finalizar_memoria_job`). Log `Job Finalizado` |
 | `buscar_job`, `destruir_job`, `armar_ruta` | Helpers internos |
 | `t_job_instrucciones` | `{jid, t_list* instrucciones (char*)}` |
 
-## `memoria.c` / `memoria.h` *(solo `origin/placa`)*
+## `memoria.c` / `memoria.h`
 
 ### Estructuras
 ```c

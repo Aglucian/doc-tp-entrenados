@@ -19,7 +19,7 @@ Administra la cola de Jobs del cluster. Se ocupa de:
 **Ejecución:** `./bin/planificador [Archivo Config] [Path Job Inicial]`
 
 ## Estado
-En `develop` desde el PR #15 (30/10). Validado con los módulos reales en la [[Mini Entrenamiento 2026-11-14]].
+Todo en `develop`: Check 3 en el PR #15 y Check 4 en el PR #21. Validado con los módulos reales en la [[Mini Entrenamiento 2026-11-14]], el [[Check 4 2026-11-14]] y la [[Suite cátedra 2026-11-14]].
 
 | Funcionalidad | Estado | Commit |
 | --- | --- | --- |
@@ -33,7 +33,8 @@ En `develop` desde el PR #15 (30/10). Validado con los módulos reales en la [[M
 | Servicios Loader / Labeler / Logger (`LOAD_BATCH`, `LABEL`, `REPORT`) | ✅ | `42d562c` |
 | Deslockeo al desconectarse un Core | ✅ | `169c8a8` |
 | Estadísticas por Job (incluida la memoria dinámica máxima) | ✅ | |
-| Checkpoints (`SAVE`/`LOAD`/`DELETE_CHECKPOINT`) | ❌ | Check 4 |
+| Checkpoints (`SAVE`/`LOAD`/`DELETE_CHECKPOINT`) contra el Storage | ✅ | `3afe5ee` (#21) |
+| Log `Contexto final` de cada Job (para validar registros) | ✅ | `896a387` |
 
 > [!success] Probado contra módulos simulados
 > Las pruebas usaron Placa, Storage y Core simulados en Python, que hablan el protocolo real:
@@ -42,7 +43,7 @@ En `develop` desde el PR #15 (30/10). Validado con los módulos reales en la [[M
 > - los 3 servicios, con cola FIFO, tramos que cruzan páginas y stdin
 > - desconexión de un Core
 >
-> Valgrind dio 0 bytes de fuga confirmada y ningún acceso inválido. El 14/11 se corrió la [[Mini Entrenamiento 2026-11-14|Mini Entrenamiento]] con los 4 módulos reales: ✅ sin errores.
+> Valgrind dio 0 bytes de fuga confirmada y ningún acceso inválido. El 14/11 se corrió todo con los 4 módulos reales: la [[Mini Entrenamiento 2026-11-14|Mini Entrenamiento]], los [[Check 4 2026-11-14|checkpoints con kill -9]] y la [[Suite cátedra 2026-11-14|suite de la cátedra]] completa (CP2 y CP3). ✅
 
 ## Modelo de estados
 
@@ -52,9 +53,9 @@ stateDiagram-v2
     NEW --> READY: largo plazo (avisar_creacion_a_placa OK)
     READY --> EXEC: corto plazo (despachar_en_core)
     EXEC --> READY: fin de quantum / Core desconectado (con deslockeo)
-    EXEC --> BLOCKED: page fault / LOAD_BATCH / LABEL / REPORT
-    BLOCKED --> READY: página cargada / servicio terminado + deslockeo
-    BLOCKED --> EXIT: ERROR_PAGE_FAULT / ERROR_LOADER / ERROR_LABELER / ERROR_LOGGER
+    EXEC --> BLOCKED: page fault / LOAD_BATCH / LABEL / REPORT / SAVE·LOAD·DELETE_CHECKPOINT
+    BLOCKED --> READY: página cargada / servicio o checkpoint terminado + deslockeo
+    BLOCKED --> EXIT: ERROR_PAGE_FAULT / ERROR_LOADER / ERROR_LABELER / ERROR_LOGGER / SIN_ESPACIO_STORAGE / CHECKPOINT_INEXISTENTE / ERROR_STORAGE
     EXEC --> EXIT: EXIT / OUT_OF_MEMORY / ERROR_SYSCALL
     NEW --> EXIT: ERROR_PLACA
 ```
@@ -68,7 +69,10 @@ El enunciado no los define. Estos son los que elegimos:
 | `ERROR_PLACA` | La Placa no pudo crear el Job |
 | `ERROR_PAGE_FAULT` | La Placa no pudo cargar la página (o no se pudo crear el hilo) |
 | `OUT_OF_MEMORY` | `ALLOC` sin espacio en el Offload |
-| `ERROR_SYSCALL` | Syscall de servicio con payload malformado |
+| `ERROR_SYSCALL` | Syscall de servicio o de checkpoint con payload malformado |
+| `SIN_ESPACIO_STORAGE` | `SAVE_CHECKPOINT` sin espacio en el Storage (o con el directorio lleno) |
+| `CHECKPOINT_INEXISTENTE` | `LOAD_CHECKPOINT` de un checkpoint que no existe (en `DELETE` solo se informa) |
+| `ERROR_STORAGE` | Se perdió la conexión con el Storage durante un pedido de checkpoint |
 | `ERROR_LOADER` / `ERROR_LABELER` / `ERROR_LOGGER` | Falló el servicio (archivo inexistente, stdin cerrado, error de la Placa…) |
 | `MOTIVO_NO_SOPORTADO` | Devolución con un motivo desconocido |
 
@@ -86,11 +90,13 @@ El enunciado no los define. Estos son los que elegimos:
 | timer de quantum | `contar_quantum` | Duerme `RR_QUANTUM` ms e interrumpe si el despacho sigue vigente (detached) |
 | page fault | `resolver_page_fault` | Uno por PF (detached): pide la página a la Placa → READY o EXIT |
 | Loader / Labeler / Logger | `ejecutar_servicio` | Uno por servicio: atiende su cola FIFO de a una petición |
+| Checkpoints | `ejecutar_servicio` | Igual que un servicio (cola FIFO), pero sin los logs de inicio y fin de Servicio: atiende `SAVE`/`LOAD`/`DELETE_CHECKPOINT` |
 
 ## Sincronización
 - `mutex_procesos`, `mutex_new` y `mutex_ready` protegen la lista global y las colas
 - `sem_new` y `sem_ready` cuentan los Jobs disponibles en cada cola
 - `sem_multiprogramacion` se inicializa en `GRADO_MULTIPROGRAMACION`; se libera en `finalizar_proceso`
+- `mutex_storage`: lo mismo para el socket del Storage (`pedir_a_storage`)
 - `mutex_placa`: **todo** pedido a la Placa pasa por `pedir_a_placa`, que envía y recibe sin soltar el lock. Así el largo plazo, los page faults y los servicios comparten el socket sin desfasar respuestas
 - `mutex_cores` protege la lista de Cores; `sem_cores_libres` cuenta los Cores sin Job (`esperar_core_libre`)
 - `t_core.mutex_socket` serializa los envíos a un Core (despacho, interrupción, respuesta de syscall)
@@ -183,7 +189,8 @@ typedef struct {
 ### Cliente de la Placa
 | Función | Pedido → respuesta | Notas |
 | --- | --- | --- |
-| `pedir_a_placa` *(static)* | genérico | Envío y recepción bajo `mutex_placa`; valida el opcode de respuesta y loguea si se perdió la conexión |
+| `pedir` *(static)* | genérico | Envío y recepción de un pedido bajo el mutex del socket; valida el opcode de respuesta y loguea si se perdió la conexión. Lo usan la Placa y el Storage |
+| `pedir_a_placa` *(static)* | genérico | `pedir` sobre `socket_placa` / `mutex_placa` |
 | `pedir_confirmacion_a_placa` *(static)* | genérico → `{bool ok}` | Para todas las respuestas que son solo ok |
 | `avisar_creacion_a_placa` | `OP_CREAR_JOB {jid, path}` → `{ok}` | |
 | `avisar_finalizacion_a_placa` | `OP_FINALIZAR_JOB {jid}` → `{ok}` | |
@@ -193,6 +200,16 @@ typedef struct {
 | `escribir_en_placa` | `OP_ESCRIBIR_DATOS {jid, dir_fisica, bytes}` → `{ok}` | Log `## (<JID>) - Escritura - Dirección Física: … - Tamaño: …` |
 | `leer_de_placa` | `OP_LEER_DATOS {jid, dir_fisica, tam}` → `{ok, bytes}` | Log `Lectura`. Devuelve un `malloc` o `NULL` |
 | `deslockear_paginas_en_placa` | `OP_DESLOCKEO_PAGINAS {jid}` → `{ok}` | Log `## (<JID>) - Deslockeo de páginas` |
+
+### Cliente del Storage
+| Función | Pedido → respuesta | Notas |
+| --- | --- | --- |
+| `pedir_a_storage` *(static)* | genérico | `pedir` sobre `socket_storage` / `mutex_storage` |
+| `guardar_checkpoint_en_storage(nombre, contenido, tam)` | `OP_GUARDAR_CHECKPOINT {nombre, bytes}` → `{ok}` | |
+| `cargar_checkpoint_de_storage(nombre, &contenido, &tam)` | `OP_CARGAR_CHECKPOINT {nombre}` → `{ok, bytes}` | `contenido` con `malloc` si da OK |
+| `eliminar_checkpoint_de_storage(nombre)` | `OP_ELIMINAR_CHECKPOINT {nombre}` → `{ok}` | |
+
+Las tres devuelven `t_resultado_storage`: `STORAGE_OK`, `STORAGE_RECHAZADO` (`ok=false`: sin espacio o inexistente) o `STORAGE_SIN_CONEXION`.
 
 ### Cliente general
 | Función | Descripción |
@@ -229,29 +246,32 @@ typedef struct {
 | `INIT_JOB` | `crear_job_pedido` | `crear_proceso(path)` → responde `{true, jid_nuevo}`. El Job sigue en EXEC |
 | `ALLOC` | `atender_alloc` | OK: `registrar_asignacion` y responde `{true, dir_logica}`. Sin espacio: responde `{false, 0}` **antes** de liberar el Core y finaliza el Job con `OUT_OF_MEMORY` |
 | `FREE` | `atender_free` | OK: `registrar_liberacion` y responde `{true, 0}`. Dirección inválida: responde `{false, 0}` y el Job sigue |
-| `LOAD_BATCH`, `LABEL`, `REPORT` | `atender_syscall_de_servicio` | `leer_peticion` → BLOCKED → `liberar_core` → `encolar_peticion`. Si viene malformada: `ERROR_SYSCALL`. **No hay respuesta** (el Core ya soltó el Job) |
+| `LOAD_BATCH`, `LABEL`, `REPORT`, `SAVE`/`LOAD`/`DELETE_CHECKPOINT` | `atender_syscall_de_servicio` | `leer_peticion` → BLOCKED → `liberar_core` → `encolar_peticion`. Si viene malformada: `ERROR_SYSCALL`. **No hay respuesta** (el Core ya soltó el Job) |
 | `EXIT` | — | `liberar_core` → `finalizar_proceso(EXIT)` |
-| checkpoints | — | Responde "no soportada" (Check 4) |
 
 ## `servicios.c` / `servicios.h`
 
 ### Tipos
 - `t_tramo`: `{direccion_fisica, tamanio}`. Es un tramo del rango ya traducido por el Core y nunca cruza una página
-- `t_peticion`: `{proceso, archivo (solo LOAD_BATCH), tamanio, tramos}`
-- `t_servicio` (privado): `{nombre, atender(), cola, mutex_cola, pendientes}`. Hay 3 instancias estáticas: `Loader`, `Labeler`, `Logger`
+- `t_peticion`: `{proceso, syscall, archivo (LOAD_BATCH: archivo de datos; checkpoints: nombre), tamanio, tramos, motivo_error}`
+- `t_servicio` (privado): `{nombre, es_servicio, atender(), cola, mutex_cola, pendientes}`. Hay 4 instancias estáticas: `Loader`, `Labeler`, `Logger` y `Checkpoints` (con `es_servicio = false`: sin logs de inicio y fin)
 
 ### Funciones
 | Función | Descripción |
 | --- | --- |
 | `iniciar_servicios` | Crea la cola, el mutex, el semáforo y el hilo detached de cada servicio |
-| `leer_peticion(syscall, proceso, buffer)` | Parsea `{[string archivo], tamaño, n, (dir, tam)×n}`. Devuelve `NULL` si está malformada o si la suma de los tramos no es igual al tamaño |
+| `leer_peticion(syscall, proceso, buffer)` | Parsea `{[string archivo/nombre], tamaño, n, (dir, tam)×n}` (`DELETE_CHECKPOINT` trae solo `{nombre}`). Devuelve `NULL` si está malformada o si la suma de los tramos no es igual al tamaño |
 | `encolar_peticion(syscall, peticion)` | Agrega a la cola del servicio que corresponde y hace `sem_post` |
-| `ejecutar_servicio` *(static)* | Hilo: saca de la cola FIFO → log `inicia <S>` → `atender()` → **deslockea siempre** → log `finalizó <S> y pasa a READY` + READY, o `ERROR_<S>` |
-| `servicio_de` *(static)* | `LOAD_BATCH`→Loader, `LABEL`→Labeler, `REPORT`→Logger |
+| `ejecutar_servicio` *(static)* | Hilo: saca de la cola FIFO → log `inicia <S>` (solo los servicios) → `atender()` → **deslockea siempre** (salvo `DELETE_CHECKPOINT`, que no toca memoria) → log `finalizó <S> y pasa a READY` + READY, o finaliza con `motivo_error` / `ERROR_<S>` |
+| `servicio_de` *(static)* | `LOAD_BATCH`→Loader, `LABEL`→Labeler, `REPORT`→Logger, checkpoints→Checkpoints |
 | `escribir_por_tramos` / `leer_por_tramos` *(static)* | Recorren los tramos en orden, con el offset acumulado |
 | `atender_loader` *(static)* | Lee `tamaño` bytes de `PATH_DATOS/<archivo>` (si el archivo es más corto, completa con ceros y deja un warning) → `RETARDO_LOADER` → escribe por tramos |
 | `atender_labeler` *(static)* | Log `## (<JID>) - Ingrese N caracteres:` → `getline` de stdin hasta juntar N (sobrantes descartados) → escribe por tramos. Es el único hilo que lee stdin |
 | `atender_logger` *(static)* | Lee por tramos → pasa a hexadecimal en mayúsculas (`%02X`) → agrega `## (<JID>) - <HEX>` al final de `PATH_REPORTES` |
+| `atender_checkpoint` *(static)* | Despacha a `guardar_checkpoint`, `cargar_checkpoint` o `eliminar_checkpoint` |
+| `guardar_checkpoint` *(static)* | Lee el rango por tramos → `guardar_checkpoint_en_storage`. Rechazo: `SIN_ESPACIO_STORAGE` |
+| `cargar_checkpoint` *(static)* | `cargar_checkpoint_de_storage` → escribe el rango por tramos (completa con ceros o trunca si el tamaño no coincide, con un warning). Rechazo: `CHECKPOINT_INEXISTENTE` |
+| `eliminar_checkpoint` *(static)* | `eliminar_checkpoint_de_storage`. Si no existe, **solo un warning** y el Job sigue |
 | `destruir_peticion` *(static)* | Libera los tramos, el archivo y la petición |
 
 ## Configuración (`planificador.config`)

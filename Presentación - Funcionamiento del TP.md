@@ -361,7 +361,8 @@ Tiempos medidos con `CLOCK_MONOTONIC`
 | Check 1: conexiones y serialización | ✅ |
 | Check 2: FIFO / RR / HRRN | ✅ |
 | Check 3: memoria, page fault, servicios | ✅ integrado · Mini Entrenamiento OK |
-| Check 4: checkpoints | ⏳ hoy (14/11) |
+| Check 4: checkpoints y journaling | ✅ integrado · `kill -9` recuperado |
+| Suite de la cátedra (CP2 + CP3) | ✅ completa, en 5 servidores y 4 repartos |
 | Entregas | 28/11 · 12/12 · 19/12 |
 
 > Ver [[Plan de acción]] y [[Estado de ramas]]
