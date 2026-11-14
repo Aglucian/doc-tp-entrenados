@@ -1,19 +1,19 @@
 ---
 tags: [tp-so, entrenados, plan]
-actualizado: 2026-10-30
-proximo_hito: Check 3 (31/10)
+actualizado: 2026-11-14
+proximo_hito: Check 4 (14/11)
 ---
 
 # Plan de acción
 
 Volver a [[00 - Inicio]] · Ver también [[Estado de ramas]], [[Protocolo]]
 
-> [!warning] Situación al 30/10
-> El [[Planificador]] tiene **todo lo del Check 3**: page fault/BLOCKED, ALLOC/FREE, los 3 servicios y el deslockeo al caerse un Core. Está en la rama `planificador` (4 commits, pusheada) y probado contra módulos simulados.
-> Lo que bloquea la prueba real:
-> - mergear los PRs de [[Core]] (#12) y [[Placa]] (#14) a `develop`
-> - conectar `ALLOC`/`FREE` en el Core
-> - después, traer `develop` a `planificador` y abrir su PR
+> [!warning] Situación al 14/11
+> **Check 3 integrado.** Los PRs #12 (core), #14 (placa), #15 (planificador) y #17 (fix ALLOC/FREE del core) están en `develop`, y los 5 módulos compilan sin warnings.
+> La [[Mini Entrenamiento 2026-11-14|Mini Entrenamiento]] con los módulos reales salió bien: 9 page faults, 5 reemplazos con Offload y 0 errores.
+> Pendientes:
+> - el bug de `FREE` con `ok=false` en el Core
+> - **Check 4 (checkpoints), que es hoy**
 
 Roles (de `doc/distribucion-equipo.md`):
 - **D1**: Planificador, planificación
@@ -24,14 +24,14 @@ Roles (de `doc/distribucion-equipo.md`):
 
 ---
 
-## Fase A: Integración (bloqueante para probar el Check 3)
+## Fase A: Integración ✅
 Responsable: todos / D5
 
-- [ ] Mergear `origin/placa` → `develop` (PR #14)
-- [ ] Mergear `origin/core` → `develop` (PR #12), resolviendo el conflicto de `protocolo_entrenados.h` (ver [[Estado de ramas]], sección del conflicto)
+- [x] Mergear `origin/placa` → `develop` (PR #14)
+- [x] Mergear `origin/core` → `develop` (PR #12), resolviendo el conflicto de `protocolo_entrenados.h` (ver [[Estado de ramas]], sección del conflicto)
 - [x] Mergear `origin/storage` → `develop` (`764b9c3`)
-- [ ] `make` en los 5 módulos sin warnings
-- [ ] Traer `develop` a `planificador` y abrir el PR `planificador` → `develop`
+- [x] `make` en los 5 módulos sin warnings (14/11)
+- [x] PR `planificador` → `develop` (#15, mergeado el 30/10)
 - [ ] Repetir la prueba del Check 2 (FIFO/RR/HRRN con NOOP/SET/SUM/SUB/JNZ) para descartar regresiones
 - [ ] Actualizar la tabla §5.1 de `doc/planificador.md` con los payloads reales (ver [[Protocolo#Payloads Core → Planificador]])
 
@@ -52,8 +52,9 @@ Responsable: D2 · Commit `e5fd060`
 
 El Core espera `OP_RSP_SYSCALL {bool ok, uint32 valor}`:
 
-- [ ] **[Core, D5]** En `origin/core`, agregar los `case INST_ALLOC` / `INST_FREE` en `ejecutar_instruccion`, usando `solicitar_syscall_con_parametro` (hoy caen en "Instrucción no reconocida"). Ver [[Core]]
-  - Contrato: si `ALLOC` responde `ok=false`, el Job **ya fue finalizado** → el Core lo abandona sin `OP_DEVOLUCION`
+- [x] **[Core, D5]** `case INST_ALLOC` / `INST_FREE` en `ejecutar_instruccion` (`5ba1c3b`, PR #17)
+- [ ] **[Core, D5]** `FREE` con `ok=false`: hoy hace `goto error` y **el Core se desconecta**. Tiene que loguear un warning y seguir. Ver [[Core]]
+- [ ] **[Core, D5]** (cosmético) `ALLOC` con `ok=false` devuelve `EJEC_EXIT` y manda un `OP_DEVOLUCION` de un Job ya finalizado. Debería abandonarlo sin devolverlo
 - [x] `SYSCALL_ALLOC` → `OP_ASIGNAR_ESPACIO` → responde la dirección lógica. Sin espacio: `{false}` y finaliza con `OUT_OF_MEMORY`
 - [x] `SYSCALL_FREE` → `OP_LIBERAR_ESPACIO`. Dirección inválida: `{false}` y el Job sigue
 - [x] `t_proceso` tiene `memoria_dinamica_actual` y `reservas` (`dir → tamaño`); el máximo sale en las estadísticas
@@ -74,13 +75,15 @@ Payload: `{id, jid, contexto, [string nombre], uint32 tamaño, uint32 cant_tramo
 - [x] Logs de inicio y fin de servicio, de acceso a memoria y de deslockeo
 - [x] Deslockeo **siempre**, incluso si el servicio falló (después finaliza con `ERROR_<SERVICIO>`)
 
-## Fase E: Validación del Check 3
+## Fase E: Validación del Check 3 🟡
 Responsable: todos
 
-- [ ] Script *Mini Entrenamiento*: `ALLOC` + `LOAD_BATCH` + `FORWARD/BACKWARD/UPDATE` + `REPORT`
-- [ ] Revisar en los logs: page faults en varias páginas, Jobs que pasan por BLOCKED, reportes hex correctos
+- [x] Script *Mini Entrenamiento*: `ALLOC` + `LOAD_BATCH` + `FORWARD/BACKWARD/UPDATE` + `REPORT` → [[Mini Entrenamiento 2026-11-14]]
+- [x] Revisar en los logs: page faults en varias páginas, Jobs que pasan por BLOCKED, reportes hex correctos
 - [ ] Correr con `valgrind --leak-check=full` en Planificador y Placa (Planificador contra mocks: ✅ 0 bytes de fuga confirmada)
-- [ ] Probar con LRU y con CLOCK-M en la Placa, y con FIFO, RR y HRRN en el Planificador
+- [ ] Probar con LRU y con CLOCK-M en la Placa, y con FIFO, RR y HRRN en el Planificador (hecho: CLOCK-M + RR)
+- [ ] Varios Jobs y varios Cores a la vez
+- [ ] Decidir qué hacer con el livelock de rangos más grandes que la memoria (ver [[Mini Entrenamiento 2026-11-14#Hallazgos]])
 
 ---
 

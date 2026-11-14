@@ -1,9 +1,9 @@
 ---
 tags: [tp-so, entrenados, modulo, planificador]
 modulo: planificador
-rama: planificador
+rama: develop
 responsables: [D1, D2]
-actualizado: 2026-10-30
+actualizado: 2026-11-14
 ---
 
 # Planificador
@@ -19,7 +19,7 @@ Administra la cola de Jobs del cluster. Se ocupa de:
 **Ejecución:** `./bin/planificador [Archivo Config] [Path Job Inicial]`
 
 ## Estado
-Rama `planificador` (`169c8a8`, pusheada el 30/10). Todavía no está en `develop`.
+En `develop` desde el PR #15 (30/10). Validado con los módulos reales en la [[Mini Entrenamiento 2026-11-14]].
 
 | Funcionalidad | Estado | Commit |
 | --- | --- | --- |
@@ -42,7 +42,7 @@ Rama `planificador` (`169c8a8`, pusheada el 30/10). Todavía no está en `develo
 > - los 3 servicios, con cola FIFO, tramos que cruzan páginas y stdin
 > - desconexión de un Core
 >
-> Valgrind dio 0 bytes de fuga confirmada y ningún acceso inválido. **Falta** la prueba *Mini Entrenamiento* con la Placa y el Core reales (PRs #12 y #14).
+> Valgrind dio 0 bytes de fuga confirmada y ningún acceso inválido. El 14/11 se corrió la [[Mini Entrenamiento 2026-11-14|Mini Entrenamiento]] con los 4 módulos reales: ✅ sin errores.
 
 ## Modelo de estados
 

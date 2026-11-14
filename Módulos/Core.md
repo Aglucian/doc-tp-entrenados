@@ -1,9 +1,9 @@
 ---
 tags: [tp-so, entrenados, modulo, core]
 modulo: core
-rama: develop + origin/core
+rama: develop
 responsables: [D5]
-actualizado: 2026-10-30
+actualizado: 2026-11-14
 ---
 
 # Core
@@ -24,16 +24,12 @@ Es el ejecutor de Jobs. Recibe un Job (`jid` + contexto) del Planificador y corr
 | MMU: división en tramos por página, traducción, page fault | ❌ | ✅ |
 | FORWARD / BACKWARD / UPDATE | ❌ | ✅ |
 | LOAD_BATCH, LABEL, REPORT, SAVE/LOAD/DELETE_CHECKPOINT (envío) | ❌ | ✅ |
-| **ALLOC / FREE** | ❌ | ⚠️ se parsean pero **no tienen `case`** en `ejecutar_instruccion` y caen en "Instrucción no reconocida" |
+| **ALLOC / FREE** | ✅ (`5ba1c3b`) | ✅ (manejo de `ok=false` pendiente, ver abajo) |
 
-> [!bug] ALLOC/FREE en `origin/core`
-> `parsear_operacion` devuelve `INST_ALLOC`/`INST_FREE` y existe `solicitar_syscall_con_parametro()` en `syscalls.c`, pero ningún `case` la llama. Hay que agregarlo antes del Check 3:
-> 1. leer el registro del tamaño o de la dirección
-> 2. `solicitar_syscall_con_parametro`
-> 3. guardar `valor` en el registro destino (ALLOC)
-> 4. `pc++`
->
-> Si `ALLOC` recibe `ok=false`, el Planificador **ya finalizó el Job** (`OUT_OF_MEMORY`). El Core tiene que abandonarlo sin mandar `OP_DEVOLUCION`. El Planificador ya atiende ALLOC/FREE desde `e5fd060`.
+> [!bug] `FREE` con `ok=false` desconecta al Core
+> ALLOC y FREE ya están conectados (`5ba1c3b`, PR #17), pero el manejo de `ok=false` no respeta el contrato con el [[Planificador]]:
+> - **`FREE` (bug):** hace `goto error` → `EJEC_ERROR` → `ejecutar_ciclo_instruccion` devuelve `false` → `atender_jobs_planificador` corta y **el Core se desconecta**. El Planificador devuelve el Job a READY y, si era el único Core, el sistema se traba. Lo correcto: loguear un warning y continuar (`break`).
+> - **`ALLOC` (cosmético):** devuelve `EJEC_EXIT`, así que manda un `OP_DEVOLUCION EXIT` de un Job que el Planificador ya finalizó (`OUT_OF_MEMORY`). El Planificador lo ignora con un warning. Lo acordado era abandonar el Job sin devolverlo.
 
 ## Ciclo de instrucción
 

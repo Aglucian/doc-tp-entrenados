@@ -354,14 +354,14 @@ Tiempos medidos con `CLOCK_MONOTONIC`
 
 ---
 
-## Estado al 30/10
+## Estado al 14/11
 
 | Hito | Estado |
 | --- | --- |
 | Check 1: conexiones y serialización | ✅ |
 | Check 2: FIFO / RR / HRRN | ✅ |
-| Check 3: memoria, page fault, servicios | 🟡 Planificador ✅ (PR #15) · Core #12 · Placa #14 |
-| Check 4: checkpoints | ⏳ 14/11 |
+| Check 3: memoria, page fault, servicios | ✅ integrado · Mini Entrenamiento OK |
+| Check 4: checkpoints | ⏳ hoy (14/11) |
 | Entregas | 28/11 · 12/12 · 19/12 |
 
 > Ver [[Plan de acción]] y [[Estado de ramas]]
