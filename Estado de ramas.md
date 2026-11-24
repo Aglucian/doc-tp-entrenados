@@ -1,30 +1,30 @@
 ---
 tags: [tp-so, entrenados, git]
-actualizado: 2026-11-14
+actualizado: 2026-11-24
 ---
 
 # Estado de ramas
 
 Volver a [[00 - Inicio]] · Ver [[Plan de acción]]
 
-Las ramas se comparan contra `origin/develop` (`3a0e4c3`) después de un `git fetch` el **14/11**.
+Las ramas se comparan contra `origin/develop` (`6e367d1`) después de un `git fetch` el **24/11**.
 
 | Rama | Adelante / atrás de `develop` | Contenido | Acción |
 | --- | --- | --- | --- |
-| `develop` | — | Checks 2, 3 y 4 completos: #12 core, #14 placa, #15 planificador, #17/#19 ALLOC/FREE del core, #20 despliegue, #21/#22 checkpoints y journaling. Commits directos: `2a9b3b3` señales del Storage, `5282eb3` prueba de checkpoints, `896a387` Placa con rutas absolutas y log de contexto, `03d9deb` runner de la cátedra, `3a0e4c3` repartos | base |
-| `main` | 0 / −15 | Último merge: #16 (develop → main, 31/10). **Le falta todo el Check 4** | **mergear `develop` → `main` antes de la entrega** |
-| `origin/core` | 0 / −12 | Ya está en `develop` (#19) | — |
-| `origin/placa` | 0 / −22 | Ya está en `develop` (#14) | — |
-| `origin/planificador` | 0 / −7 | Ya está en `develop` (#21) | — |
-| `origin/storage` | 0 / −7 | Ya está en `develop` (#22) | — |
-| `utils` | 0 / −67 | Vieja | borrar o recrear desde `develop` |
+| `develop` | — | Checks 2, 3 y 4 + #24 consola de la Placa (`INFO`/`TLS`) + `6e367d1` runner de las pruebas finales | base |
+| `main` | 0 / −3 | **#23 (develop → main, 14/11)**: tiene todo hasta `3a0e4c3`, incluido el Check 4. Le faltan #24 y el runner de las finales | mergear `develop` → `main` antes de la entrega |
+| `origin/core` | 0 / −16 | Ya está en `develop` (#19) | — |
+| `origin/placa` | 0 / −2 | Ya está en `develop` (#24) | — |
+| `origin/planificador` | 0 / −11 | Ya está en `develop` (#21) | — |
+| `origin/storage` | 0 / −11 | Ya está en `develop` (#22) | — |
+| `utils` | 0 / −71 | Vieja | borrar o recrear desde `develop` |
 
 No hay PRs abiertos. Ninguna rama tiene commits que no estén en `develop`.
 
 > [!info] El despliegue distribuido (`deploy/`) está en `develop` desde el PR #20. Ver [[Despliegue distribuido]].
 
 > [!info] Ramas locales
-> En esta máquina se trabaja sobre `develop` (`3a0e4c3`, igual al remoto). Las ramas de cada módulo quedaron como estaban después de sus PRs.
+> En esta máquina se trabaja sobre `develop` (`6e367d1`, igual al remoto). Las ramas de cada módulo quedaron como estaban después de sus PRs.
 
 ## Conflicto de `protocolo_entrenados.h` ✅ resuelto
 `core` y `placa` agregaban los mismos opcodes (`OP_TAM_PAGINA`, `OP_DESLOCKEAR_PAGINAS`, `OP_RSP_DESLOCKEAR_PAGINAS`). En `develop` aparecen una sola vez (`0x68`–`0x6A`).

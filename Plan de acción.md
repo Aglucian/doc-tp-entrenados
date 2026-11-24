@@ -1,6 +1,6 @@
 ---
 tags: [tp-so, entrenados, plan]
-actualizado: 2026-11-14
+actualizado: 2026-11-24
 proximo_hito: Entrega 1 (28/11)
 ---
 
@@ -8,12 +8,12 @@ proximo_hito: Entrega 1 (28/11)
 
 Volver a [[00 - Inicio]] · Ver también [[Estado de ramas]], [[Protocolo]]
 
-> [!success] Situación al 14/11
-> - **Checks 2, 3 y 4 integrados en `develop`** (`3a0e4c3`). Los 5 módulos compilan sin warnings.
-> - **Suite de la cátedra:** el CP2 (rápido y con los retardos reales) y el CP3 pasan completos, en los 5 servidores y con 4 repartos de módulos. Ver [[Suite cátedra 2026-11-14]].
-> - **Check 4:** checkpoints y journaling, con la recuperación después de un `kill -9` probada en los 5 servidores. Ver [[Check 4 2026-11-14]].
+> [!success] Situación al 24/11
+> - **Checks 2, 3 y 4 integrados** en `develop` y llevados a `main` (#23, 14/11). La Placa sumó su consola (`INFO`/`TLS`, #24).
+> - **Pruebas finales de la cátedra** (publicadas el 22/11): **las 6 pasan** en los 5 servidores. Ver [[Pruebas finales 2026-11-24]].
+> - Antes: suite de CP2/CP3 completa ([[Suite cátedra 2026-11-14]]) y Check 4 con `kill -9` ([[Check 4 2026-11-14]]).
 >
-> **Lo que falta antes de la entrega del 28/11:** mergear `develop` → `main`, correr la suite oficial del CP4 cuando la publiquen y las tareas abiertas de abajo.
+> **Lo que falta antes del 28/11:** verificar "sin esperas activas ni memory leaks" (valgrind y CPU), practicar el armado en menos de 10 minutos, y llevar a `main` lo nuevo de `develop`.
 
 Roles (de `doc/distribucion-equipo.md`):
 - **D1**: Planificador, planificación
@@ -113,7 +113,11 @@ Probado en los 5 servidores con `kill -9` al Storage → [[Check 4 2026-11-14]]
 - [ ] Helgrind/DRD en pruebas de stress
 - [x] Scripts de deploy y configs por máquina → [[Despliegue distribuido]] (`deploy/desplegar.sh`, `18d367d`)
 - [x] Pruebas distribuidas: 5 servidores y 4 repartos de módulos (ver [[Suite cátedra 2026-11-14#Repartos de módulos entre servidores]])
-- [ ] **Mergear `develop` → `main`** (está en el #16, del 31/10)
+- [x] Mergear `develop` → `main` (#23, 14/11)
+- [ ] Llevar a `main` lo nuevo de `develop` (#24 consola de la Placa, runner de las pruebas finales)
+- [x] Pruebas finales de la cátedra: las 6 pasan → [[Pruebas finales 2026-11-24]]
+- [ ] Verificar "sin esperas activas ni memory leaks" (valgrind + CPU) en la prueba 06
+- [ ] Practicar el armado en el laboratorio en menos de 10 minutos
 - [x] **[Storage, D4]** Manejar SIGINT/SIGTERM sin loguear errores al apagarse (`2a9b3b3`)
 - [ ] Cada integrante debe poder explicar cualquier módulo en el coloquio
 

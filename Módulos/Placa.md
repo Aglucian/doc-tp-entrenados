@@ -3,7 +3,7 @@ tags: [tp-so, entrenados, modulo, placa]
 modulo: placa
 rama: develop
 responsables: [D3]
-actualizado: 2026-11-14
+actualizado: 2026-11-24
 ---
 
 # Placa
@@ -32,11 +32,15 @@ Todo en `develop`.
 | Carga de página con reemplazo LRU / CLOCK-M y offload | ✅ | #14 |
 | Lectura y escritura física, deslockeo | ✅ | #14 |
 | Retardos `RETARDO_MEMORIA` (también en cada FETCH) / `RETARDO_OFFLOAD` | ✅ | #14 |
+| Consola local `INFO` (memoria y Offload ocupados, frames libres/lockeados, Jobs) y `TLS` (memoria por Job) | ✅ | `c2ce7fc` (#24) |
 
 > [!success] Probado
 > En la suite de la cátedra del CP3, el LRU elige las víctimas en el orden que espera el README (0→1→2→3). CLOCK-M, el aislamiento entre Jobs, el Offload lleno y el page locking del 06 también pasan: ninguna página del `LABEL` fue víctima. Ver [[Suite cátedra 2026-11-14]].
 
 ---
+
+## `consola.c` / `consola.h` (#24)
+Hilo de consola con `fgets` (no usa readline): `INFO` → `mostrar_info_memoria()` y `TLS` → `mostrar_jobs_memoria()`, las dos en `memoria.c`. La prueba final 06 pide `INFO` al terminar; ahí mostró 0 frames lockeados y 0 Jobs ([[Pruebas finales 2026-11-24]]).
 
 ## `main.c` / `main.h`
 | Elemento | Descripción |

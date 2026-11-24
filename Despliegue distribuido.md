@@ -144,6 +144,27 @@ deploy/catedra.sh checkpoint_2 todos --rapido
 - `pruebas/repartos.sh`: los mismos escenarios con 4 repartos de módulos distintos ([[Suite cátedra 2026-11-14#Repartos de módulos entre servidores]]).
 - Cada servidor se puede pisar desde el entorno: `PLACA=… STORAGE=… PLANIFICADOR=… CORES_HOSTS="…" deploy/catedra.sh …`
 
+## Pruebas finales (`entregas_finales`)
+`catedra.sh` también corre la suite de las entregas finales, con variantes por carpeta:
+
+```bash
+deploy/catedra.sh entregas_finales 01_planificacion/HRRN
+deploy/pruebas/finales/05_journal.sh      # secuencias: 04_storage.sh, 05_journal.sh, 06_estabilidad.sh
+```
+
+Para armar secuencias hay acciones sobre un escenario ya iniciado (`--solo-iniciar`):
+
+| Acción | Qué hace |
+| --- | --- |
+| `esperar-log <módulo> <texto> [s]` | Espera a que el texto aparezca en el log |
+| `matar` / `parar <módulo>` | `kill -9` / Ctrl-C |
+| `levantar <módulo> [script]` | Lo vuelve a arrancar; el Planificador, con otro script |
+| `consola <módulo> <comando>` | Escribe en la consola del Storage o de la Placa |
+| `cortar-durante <módulo> <ERE> [s]` | Ctrl-C apenas la última línea del log coincide (por ejemplo, un Core durante `FORWARD`) |
+| `esperar-fin [s]` · `detener` · `limpiar-storage` · `resultados` | Fin de los Jobs, cortar todo, borrar el volumen y traer los logs |
+
+Opciones nuevas: `--cores "1 2"` (Cores que se arrancan al principio) y `--conservar-storage`. Resultados en [[Pruebas finales 2026-11-24]].
+
 ## Próximas pruebas
 - [x] Varios Jobs (con `INIT_JOB`) para que trabajen los 2 Cores (suite de la cátedra)
 - [x] LRU contra CLOCK-M con el mismo script (CP3 04 y 05)

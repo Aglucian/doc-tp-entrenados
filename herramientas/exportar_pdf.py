@@ -49,6 +49,7 @@ NOTAS = [
     ("Pruebas/Mini Entrenamiento 2026-11-14.md", "Pruebas"),
     ("Pruebas/Suite cátedra 2026-11-14.md", "Pruebas"),
     ("Pruebas/Check 4 2026-11-14.md", "Pruebas"),
+    ("Pruebas/Pruebas finales 2026-11-24.md", "Pruebas"),
     ("Presentación - Funcionamiento del TP.md", "Presentación"),
 ]
 
