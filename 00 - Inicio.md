@@ -33,6 +33,12 @@ Esta es la documentación de trabajo del TP **EntrenadOS** (grupo *RequiemSO*). 
 
 - [[Protocolo]]: opcodes, payloads y enums compartidos (`protocolo_entrenados.h`)
 
+## Coloquio
+- [[Teoría vs implementación]]: cada concepto de la materia con su lugar en el TP y preguntas probables
+- [[Decisiones de diseño]]: lo que el enunciado deja al grupo, con su alternativa y justificación
+- [[Concurrencia y sincronización]]: hilos, mutex y semáforos de cada módulo
+- [[Prompts de audio]]: 10 audios de NotebookLM para estudiar el TP, con las fuentes de cada uno
+
 ## Arquitectura
 
 ```mermaid

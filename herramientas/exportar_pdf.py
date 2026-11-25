@@ -49,6 +49,10 @@ NOTAS = [
     ("Pruebas/Suite cátedra 2026-11-14.md", "Pruebas"),
     ("Pruebas/Check 4 2026-11-14.md", "Pruebas"),
     ("Pruebas/Pruebas finales 2026-11-24.md", "Pruebas"),
+    ("Coloquio/Teoría vs implementación.md", "Coloquio"),
+    ("Coloquio/Decisiones de diseño.md", "Coloquio"),
+    ("Coloquio/Concurrencia y sincronización.md", "Coloquio"),
+    ("NotebookLM/Prompts de audio.md", "Coloquio"),
     ("Presentación - Funcionamiento del TP.md", "Presentación"),
 ]
 
