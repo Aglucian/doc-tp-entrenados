@@ -24,8 +24,6 @@ from reportlab.platypus import (BaseDocTemplate, CondPageBreak, Frame, KeepToget
                                 Paragraph, Preformatted, Spacer, Table, TableStyle)
 from reportlab.platypus.tableofcontents import TableOfContents
 
-BOVEDA, SALIDA = sys.argv[1], sys.argv[2]
-
 FUENTES = "/usr/share/fonts/truetype/dejavu/"
 pdfmetrics.registerFont(TTFont("Sans", FUENTES + "DejaVuSans.ttf"))
 pdfmetrics.registerFont(TTFont("Sans-B", FUENTES + "DejaVuSans-Bold.ttf"))
@@ -216,7 +214,7 @@ def bloques(lineas, ancho, toc_nota=None):
     while i < len(lineas):
         linea = lineas[i]
         s = linea.strip()
-        if not s:
+        if not s or (s.startswith("<!--") and s.endswith("-->")):  # vacías y comentarios HTML (marcas de dibujo)
             i += 1
             continue
         if s.startswith("```"):
@@ -405,4 +403,6 @@ def main():
     print("PDF generado:", SALIDA)
 
 
-main()
+if __name__ == "__main__":
+    BOVEDA, SALIDA = sys.argv[1], sys.argv[2]
+    main()

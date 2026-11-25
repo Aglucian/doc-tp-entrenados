@@ -20,7 +20,7 @@ Esta es la documentación de trabajo del TP **EntrenadOS** (grupo *RequiemSO*). 
 - [[Check 4 2026-11-14]]: checkpoints y journaling, con `kill -9` al Storage en los 5 servidores ✅
 - [[Suite cátedra 2026-11-14]]: los escenarios oficiales de CP2 y CP3 (`entrenados-pruebas`) en los 5 servidores ✅
 - [[Mini Entrenamiento 2026-11-14]]: primera prueba de punta a punta con los módulos reales (Check 3)
-- [[Presentación - Funcionamiento del TP]]: diapositivas que explican el TP de punta a punta (abrir con *Slides: Start presentation*)
+- [[Presentación - Funcionamiento del TP]]: diapositivas que explican el TP de punta a punta (abrir con *Slides: Start presentation*). En PDF, con los diagramas dibujados: `TP EntrenadOS - Presentación.pdf` (se genera con `herramientas/presentacion_pdf.py`)
 
 ## Módulos
 | Módulo | Nota | Rol |
