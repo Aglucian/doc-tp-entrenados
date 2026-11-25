@@ -14,6 +14,7 @@ Esta es la documentación de trabajo del TP **EntrenadOS** (grupo *RequiemSO*). 
 ## Planificación
 - [[Plan de acción]]: qué falta, en qué orden y para qué checkpoint
 - [[Estado de ramas]]: qué tiene cada rama y cómo integrarlas
+- [[Bugs encontrados]]: los bugs de cada rama, qué problema causaban y cuándo se corrigieron
 - [[Despliegue distribuido]]: servidores de prueba y `deploy/desplegar.sh` (cómo correr pruebas en varias máquinas)
 - [[Pruebas finales 2026-11-24]]: las 6 pruebas oficiales de las entregas finales en los 5 servidores ✅
 - [[Check 4 2026-11-14]]: checkpoints y journaling, con `kill -9` al Storage en los 5 servidores ✅

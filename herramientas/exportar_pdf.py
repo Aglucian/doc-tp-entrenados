@@ -39,6 +39,7 @@ NOTAS = [
     ("00 - Inicio.md", "Inicio"),
     ("Plan de acción.md", "Planificación"),
     ("Estado de ramas.md", "Planificación"),
+    ("Bugs encontrados.md", "Planificación"),
     ("Despliegue distribuido.md", "Planificación"),
     ("Módulos/Planificador.md", "Módulos"),
     ("Módulos/Core.md", "Módulos"),
