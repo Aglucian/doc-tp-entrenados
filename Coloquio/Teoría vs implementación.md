@@ -46,7 +46,7 @@ El coloquio evalúa que la implementación **no contradiga la teoría**. Esta no
 | Clock mejorado (CLOCK-M) | Puntero circular; busca (u=0, m=0), después (u=0, m=1) apagando el bit de uso, hasta 4 vueltas |
 | Bit de modificado | Solo se escribe en el Offload la víctima modificada (o la que nunca tuvo copia) |
 | Bloqueo de páginas (*page locking*) | Las páginas de una instrucción o de un servicio quedan lockeadas y nunca son víctimas; como los buffers de E/S en la teoría |
-| Thrashing | Si un rango necesita más páginas que marcos, el Job entra en un ciclo de page faults (ver [[Mini Entrenamiento 2026-11-14#Hallazgos]]) |
+| Thrashing | Si un rango necesita más páginas que marcos, el Job entra en un ciclo de page faults: es un límite documentado del TP (ver [[Bugs encontrados#Livelock con rangos más grandes que la memoria]]) |
 | Memoria dinámica (heap) | `ALLOC`/`FREE` reservan y liberan en la Placa; la estadística guarda el máximo ocupado |
 
 **Preguntas probables**

@@ -87,7 +87,7 @@ Responsable: todos
 - [ ] HRRN con los módulos reales (la cátedra no lo evalúa en CP2 ni en CP3; solo está probado en el Check 2)
 - [x] Prueba distribuida en 5 servidores (un módulo por máquina) → [[Despliegue distribuido#Primera corrida distribuida (14/11)]]
 - [x] Varios Jobs y varios Cores a la vez (suite de la cátedra: CP2 04, CP3 06, 07 y 09)
-- [ ] Decidir qué hacer con el livelock de rangos más grandes que la memoria (ver [[Mini Entrenamiento 2026-11-14#Hallazgos]])
+- [x] Livelock de rangos más grandes que la memoria: se documenta como límite (25/11), ver [[Bugs encontrados#Livelock con rangos más grandes que la memoria]]. Consulta en el foro: #5335
 
 ---
 

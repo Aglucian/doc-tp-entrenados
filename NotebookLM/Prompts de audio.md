@@ -112,7 +112,7 @@ Armá un debate entre un docente que toma el coloquio y un estudiante del grupo.
 - **Formato:** Crítica · **Duración:** predeterminada
 
 ```
-Analizá críticamente las decisiones de diseño del TP como lo haría un docente exigente: para cada decisión importante (qué pasa cuando se cae un Core, un solo socket con la Placa, reemplazo global, reserva del Offload en ALLOC, journal con valores finales, un único mutex en el Storage, cierre con Ctrl-C) explicá la alternativa, por qué se eligió esta y qué costo tiene. Después recorré los bugs más importantes que se encontraron, qué problema causaban y cómo se corrigieron. Terminá con los problemas conocidos sin corregir (el livelock con rangos más grandes que la memoria y que el Planificador no se reconecta al Storage) y cómo defenderlos en el coloquio.
+Analizá críticamente las decisiones de diseño del TP como lo haría un docente exigente: para cada decisión importante (qué pasa cuando se cae un Core, un solo socket con la Placa, reemplazo global, reserva del Offload en ALLOC, journal con valores finales, un único mutex en el Storage, cierre con Ctrl-C) explicá la alternativa, por qué se eligió esta y qué costo tiene. Después recorré los bugs más importantes que se encontraron, qué problema causaban y cómo se corrigieron. Terminá con los límites conocidos: el livelock con rangos más grandes que la memoria, que se documentó como límite con su justificación teórica, y que el Planificador no se reconecta al Storage. Explicá cómo defenderlos en el coloquio.
 ```
 
 ## 10 · El día de la entrega

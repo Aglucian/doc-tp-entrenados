@@ -64,5 +64,8 @@ El enunciado deja varios puntos a criterio del grupo, y "las justificaciones deb
 | `t_buffer` que se marca inválido si una lectura se pasa del final | Confiar en el tamaño | Un mensaje truncado se descarta en lugar de leer basura |
 | Ctrl-C: señales bloqueadas en todos los hilos y un hilo con `sigwait()` que loguea y re-envía la señal | `exit()` en un handler | `exit()` se colgaba con un hilo bloqueado en `stdin`, y `_exit()` no terminaba bajo valgrind (ver [[Utils#`cierre.c` / `cierre.h`: Ctrl-C y SIGTERM]]) |
 
-## Pendiente de decidir
-- **Livelock con rangos más grandes que la memoria:** si un rango necesita más páginas que marcos hay, el Job entra en un ciclo de page faults. Opciones: detectarlo y finalizar el Job con error, o documentarlo como límite. Con la configuración del enunciado no pasa (ver [[Mini Entrenamiento 2026-11-14#Hallazgos]]).
+## Límites aceptados
+
+| Límite | Alternativa | Por qué se acepta |
+| --- | --- | --- |
+| Si una instrucción o syscall necesita a la vez más páginas que marcos, el Job queda en un ciclo de page faults (livelock) | Que el Core conozca la cantidad de marcos y devuelva el Job con error | Es una precondición del modelo (no se puede fijar en memoria más que la memoria física) y un caso extremo de thrashing. La cátedra dijo que no lo testea ([#5328](https://github.com/sisoputnfrba/foro/issues/5328)), las pruebas tienen como mínimo 16 marcos, y corregirlo cambiando las reglas del enunciado sería *hold and wait*. Detalle en [[Bugs encontrados#Livelock con rangos más grandes que la memoria]] |

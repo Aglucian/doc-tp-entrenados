@@ -118,7 +118,7 @@ Detalle en [[Despliegue distribuido#Primera corrida distribuida (14/11)]]. La pr
 > - Ante cada PF, deslockea las páginas que ya tenía y devuelve el Job.
 > - La carga siguiente desaloja justamente una de esas páginas.
 >
-> Con la config del enunciado (`TAM_MEMORIA=4096`) no debería pasar. Igual conviene decidirlo en grupo: o se detecta y se finaliza el Job con error, o se documenta como límite.
+> **Decisión (25/11):** se documenta como límite del TP, con su justificación teórica y la respuesta de la cátedra en el foro. Ver [[Bugs encontrados#Livelock con rangos más grandes que la memoria]].
 
 > [!warning] Restricción de configuración
 > La Placa exige que `TAM_MEMORIA` y `TAM_PAGINA` sean potencias de 2 (con 384 no arranca).
