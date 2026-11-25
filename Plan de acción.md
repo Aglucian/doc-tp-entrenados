@@ -13,7 +13,9 @@ Volver a [[00 - Inicio]] · Ver también [[Estado de ramas]], [[Protocolo]]
 > - **Pruebas finales de la cátedra** (publicadas el 22/11): **las 6 pasan** en los 5 servidores. Ver [[Pruebas finales 2026-11-24]].
 > - Antes: suite de CP2/CP3 completa ([[Suite cátedra 2026-11-14]]) y Check 4 con `kill -9` ([[Check 4 2026-11-14]]).
 >
-> **Lo que falta antes del 28/11:** verificar "sin esperas activas ni memory leaks" (valgrind y CPU), practicar el armado en menos de 10 minutos, y llevar a `main` lo nuevo de `develop`.
+> - **Sin esperas activas ni memory leaks** (prueba 06): verificado con valgrind en los 4 módulos y midiendo la CPU.
+>
+> **Lo que falta antes del 28/11:** practicar el armado en menos de 10 minutos, el cierre ordenado con Ctrl-C (Planificador, Placa y Core), y el PR `develop` → `main` cuando esté todo.
 
 Roles (de `doc/distribucion-equipo.md`):
 - **D1**: Planificador, planificación
@@ -80,7 +82,7 @@ Responsable: todos
 
 - [x] Script *Mini Entrenamiento*: `ALLOC` + `LOAD_BATCH` + `FORWARD/BACKWARD/UPDATE` + `REPORT` → [[Mini Entrenamiento 2026-11-14]]
 - [x] Revisar en los logs: page faults en varias páginas, Jobs que pasan por BLOCKED, reportes hex correctos
-- [ ] Correr con `valgrind --leak-check=full` en la Placa y en el Core (Planificador contra mocks ✅, Storage ✅: 0 bytes de fuga confirmada)
+- [x] Correr con `valgrind --leak-check=full` los 4 módulos: 0 bytes de fuga confirmada en todos (prueba final 06, ver [[Pruebas finales 2026-11-24#06 · Esperas activas y memory leaks]])
 - [x] LRU y CLOCK-M en la Placa, FIFO y RR en el Planificador (suite de la cátedra)
 - [ ] HRRN con los módulos reales (la cátedra no lo evalúa en CP2 ni en CP3; solo está probado en el Check 2)
 - [x] Prueba distribuida en 5 servidores (un módulo por máquina) → [[Despliegue distribuido#Primera corrida distribuida (14/11)]]
@@ -114,9 +116,9 @@ Probado en los 5 servidores con `kill -9` al Storage → [[Check 4 2026-11-14]]
 - [x] Scripts de deploy y configs por máquina → [[Despliegue distribuido]] (`deploy/desplegar.sh`, `18d367d`)
 - [x] Pruebas distribuidas: 5 servidores y 4 repartos de módulos (ver [[Suite cátedra 2026-11-14#Repartos de módulos entre servidores]])
 - [x] Mergear `develop` → `main` (#23, 14/11)
-- [ ] Llevar a `main` lo nuevo de `develop` (#24 consola de la Placa, runner de las pruebas finales)
+- [ ] PR `develop` → `main` cuando esté todo terminado (se trabaja sobre `develop`)
 - [x] Pruebas finales de la cátedra: las 6 pasan → [[Pruebas finales 2026-11-24]]
-- [ ] Verificar "sin esperas activas ni memory leaks" (valgrind + CPU) en la prueba 06
+- [x] Verificar "sin esperas activas ni memory leaks" (valgrind + CPU) en la prueba 06 (`f5fb0f0`)
 - [ ] Practicar el armado en el laboratorio en menos de 10 minutos
 - [x] **[Storage, D4]** Manejar SIGINT/SIGTERM sin loguear errores al apagarse (`2a9b3b3`)
 - [ ] Cada integrante debe poder explicar cualquier módulo en el coloquio

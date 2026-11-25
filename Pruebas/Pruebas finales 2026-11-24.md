@@ -13,8 +13,7 @@ Volver a [[00 - Inicio]] · Ver [[Despliegue distribuido]], [[Plan de acción]] 
 El **22/11** la cátedra publicó en `entrenados-pruebas/entregas_finales/` las 6 pruebas de las entregas finales (28/11, 12/12 y 19/12), junto con el **Documento de Pruebas Finales v1.0** (Google Doc, enlazado desde `faq.utnso.com.ar/entrenados-pruebas`). Las corrimos completas en los **5 servidores**, con el código de `develop` (`ea9ea8b`, que incluye la consola de la Placa del #24).
 
 > [!success] Resultado
-> **Las 6 pruebas pasan.** Cada resultado esperado del documento se verificó contra los logs, los reportes o el volumen del Storage.
-> Lo único sin verificar: "no hay esperas activas ni memory leaks" del 06 (ver [[#Pendiente]]).
+> **Las 6 pruebas pasan.** Cada resultado esperado del documento se verificó contra los logs, los reportes o el volumen del Storage, incluido "no hay esperas activas ni memory leaks" del 06 (ver [[#06 · Esperas activas y memory leaks]]).
 
 ## Reglas de la evaluación (del documento)
 - El TP tiene que correr **en varias máquinas**: si no, no se evalúa. Hay **10 minutos** para armar el ambiente.
@@ -100,6 +99,22 @@ Placa en .25, Storage en .26, Planificador en .27, Cores 1 y 3 en .28, Cores 2 y
 
 **13/13 Jobs con `EXIT`**, 0 errores en los 8 logs. Cada Core atendió entre 9 y 12 Jobs distintos.
 
+## 06 · Esperas activas y memory leaks
+Se repitió la 06 completa con **los 4 módulos bajo valgrind** (`--leak-check=full`), con las mismas actividades de Cores, y se midió la CPU de cada proceso leyendo `/proc/<pid>/stat`. Comando: `deploy/pruebas/finales/verificar_recursos.sh` (`f5fb0f0`).
+
+| | Placa | Planificador | Storage | Cores (5 procesos) |
+| --- | --- | --- | --- | --- |
+| **Fugas confirmadas** (definitely + indirectly lost) | 0 | 0 | 0 | 0, y en 4 de 5 "All heap blocks were freed" |
+| Errores de acceso a memoria (inválidos, sin inicializar) | 0 | 0 | 0 | 0 |
+| Possibly lost | 6 × 272 B | 14 × 272 B | 2 × 272 B | — |
+| **CPU en reposo** (todos los Jobs terminados, 20 s) | 0,0 % | 0,0 % | 0,0 % | 0,0 % |
+| **CPU con el Labeler esperando teclado** (03, 20 s) | 0,0 % | 0,0 % | 0,0 % | 0,0 % |
+| CPU máxima en actividad (bajo valgrind, 10 s) | 6,4 % | 0,2 % | 0,0 % | 2–2,5 % |
+
+- Los "possibly lost" de 272 bytes son las estructuras que reserva glibc para cada hilo que seguía vivo al cortar el proceso. Valgrind los cuenta como errores, pero no son fugas.
+- Bajo valgrind, la 06 terminó igual con **13/13 `EXIT`**, incluido el corte del Core 1 durante `BACKWARD`.
+- La Placa y el Planificador terminan con *"default action of signal 2 (SIGINT)"*: todavía no cierran ordenadamente con Ctrl-C, como sí lo hace el Storage. El documento no lo pide, pero conviene resolverlo para el coloquio.
+
 ## Lo que hubo que cambiar en el runner
 - Suite `entregas_finales` con variantes por carpeta y configs de los Cores compartidas, y el Job inicial sin comillas.
 - Labeler con textos en orden (`*`) y espera `L<n>`.
@@ -109,6 +124,7 @@ Placa en .25, Storage en .26, Planificador en .27, Cores 1 y 3 en .28, Cores 2 y
 - Ninguna prueba requirió cambios en los módulos del TP.
 
 ## Pendiente
-- [ ] **06: "no hay esperas activas ni memory leaks"**. Correr la prueba con valgrind en el Planificador y la Placa, y medir el uso de CPU de los módulos mientras esperan (por ejemplo, con el Labeler pendiente).
+- [x] **06: "no hay esperas activas ni memory leaks"**: valgrind en los 4 módulos y CPU medida (ver arriba)
+- [ ] Cierre ordenado con Ctrl-C en la Placa, el Planificador y el Core (hoy terminan por SIGINT)
 - [ ] Practicar el armado en el laboratorio en menos de 10 minutos: clonar, compilar e instalar la commons, y adaptar las IPs (`catedra.conf` / `desplegar.sh preparar`).
 - [ ] Opcional: distinguir en el motivo del Job "directorio lleno" de "falta de espacio" (hoy los dos son `SIN_ESPACIO_STORAGE`).

@@ -163,7 +163,7 @@ Para armar secuencias hay acciones sobre un escenario ya iniciado (`--solo-inici
 | `cortar-durante <módulo> <ERE> [s]` | Ctrl-C apenas la última línea del log coincide (por ejemplo, un Core durante `FORWARD`) |
 | `esperar-fin [s]` · `detener` · `limpiar-storage` · `resultados` | Fin de los Jobs, cortar todo, borrar el volumen y traer los logs |
 
-Opciones nuevas: `--cores "1 2"` (Cores que se arrancan al principio) y `--conservar-storage`. Resultados en [[Pruebas finales 2026-11-24]].
+Opciones nuevas: `--cores "1 2"` (Cores que se arrancan al principio), `--conservar-storage` y `--valgrind "<módulos>"` (un `valgrind.<pid>.txt` por proceso). La acción `cpu [s]` mide el % de CPU de cada proceso del TP; las dos se usan en `deploy/pruebas/finales/verificar_recursos.sh`. Resultados en [[Pruebas finales 2026-11-24]].
 
 ## Próximas pruebas
 - [x] Varios Jobs (con `INIT_JOB`) para que trabajen los 2 Cores (suite de la cátedra)
