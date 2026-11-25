@@ -81,6 +81,19 @@ typedef struct {
 | `config_tiene_claves(config, claves[], logger)` | `claves` termina en `NULL`. Loguea cada clave faltante |
 | `terminar_programa(logger, config)` | Destruye ambos |
 
+## `cierre.c` / `cierre.h`: Ctrl-C y SIGTERM
+Lo usan la Placa, el Planificador y el Core (el Storage tiene su propio `senales.c`).
+
+| Función | Qué hace |
+| --- | --- |
+| `bloquear_senales_de_cierre()` | Bloquea SIGINT/SIGTERM. Va al principio del `main`, antes de crear hilos: todos heredan la máscara y la señal nunca corta un `accept()`, `recv()` o `usleep()` a mitad de camino |
+| `iniciar_hilo_de_cierre(logger)` | Hilo que espera con `sigwait()`. Al llegar la señal loguea `Se recibió SIGINT: el módulo finaliza` y termina con la acción por defecto de la señal |
+
+> [!info] Por qué no `exit()` ni `_exit()`
+> - `exit()` se colgaba: la consola de la Placa (o el Labeler) está bloqueada en `stdin` con el lock del stream tomado, y `exit()` lo espera para cerrar los streams.
+> - `_exit()` funciona, pero bajo valgrind no termina si otro hilo está leyendo de la terminal.
+> - Por eso se restaura `SIG_DFL` y se vuelve a enviar la señal: el proceso termina como con un Ctrl-C común (código 130, o 143 con SIGTERM).
+
 ## `protocolo_entrenados.c` / `.h`
 Es la única fuente de verdad de la mensajería. Está documentada en [[Protocolo]].
 | Función | Descripción |

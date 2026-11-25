@@ -113,7 +113,7 @@ Se repitió la 06 completa con **los 4 módulos bajo valgrind** (`--leak-check=f
 
 - Los "possibly lost" de 272 bytes son las estructuras que reserva glibc para cada hilo que seguía vivo al cortar el proceso. Valgrind los cuenta como errores, pero no son fugas.
 - Bajo valgrind, la 06 terminó igual con **13/13 `EXIT`**, incluido el corte del Core 1 durante `BACKWARD`.
-- La Placa y el Planificador terminan con *"default action of signal 2 (SIGINT)"*: todavía no cierran ordenadamente con Ctrl-C, como sí lo hace el Storage. El documento no lo pide, pero conviene resolverlo para el coloquio.
+- En esta corrida la Placa y el Planificador todavía terminaban por SIGINT sin loguear nada. Desde `9793672` loguean `Se recibió SIGINT: el módulo finaliza` antes de terminar (ver [[Utils#`cierre.c` / `cierre.h`: Ctrl-C y SIGTERM]]); bajo valgrind siguen en 0 bytes de fuga confirmada.
 
 ## Lo que hubo que cambiar en el runner
 - Suite `entregas_finales` con variantes por carpeta y configs de los Cores compartidas, y el Job inicial sin comillas.
@@ -125,6 +125,6 @@ Se repitió la 06 completa con **los 4 módulos bajo valgrind** (`--leak-check=f
 
 ## Pendiente
 - [x] **06: "no hay esperas activas ni memory leaks"**: valgrind en los 4 módulos y CPU medida (ver arriba)
-- [ ] Cierre ordenado con Ctrl-C en la Placa, el Planificador y el Core (hoy terminan por SIGINT)
+- [x] Cierre con Ctrl-C en la Placa, el Planificador y el Core (`9793672`)
 - [ ] Practicar el armado en el laboratorio en menos de 10 minutos: clonar, compilar e instalar la commons, y adaptar las IPs (`catedra.conf` / `desplegar.sh preparar`).
 - [ ] Opcional: distinguir en el motivo del Job "directorio lleno" de "falta de espacio" (hoy los dos son `SIN_ESPACIO_STORAGE`).

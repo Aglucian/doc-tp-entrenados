@@ -15,7 +15,7 @@ Volver a [[00 - Inicio]] · Ver también [[Estado de ramas]], [[Protocolo]]
 >
 > - **Sin esperas activas ni memory leaks** (prueba 06): verificado con valgrind en los 4 módulos y midiendo la CPU.
 >
-> **Lo que falta antes del 28/11:** practicar el armado en menos de 10 minutos, el cierre ordenado con Ctrl-C (Planificador, Placa y Core), y el PR `develop` → `main` cuando esté todo.
+> **Lo que falta antes del 28/11:** practicar el armado en menos de 10 minutos y el PR `develop` → `main` cuando esté todo.
 
 Roles (de `doc/distribucion-equipo.md`):
 - **D1**: Planificador, planificación
@@ -111,7 +111,7 @@ Probado en los 5 servidores con `kill -9` al Storage → [[Check 4 2026-11-14]]
 
 ## Fase G: Cierre (28/11 → 19/12)
 - [x] Estadísticas completas en el log de fin de Job (memoria dinámica máxima agregada en `e5fd060`)
-- [ ] `SIGINT`/`SIGTERM` con cierre ordenado en los 4 módulos (Storage ✅ `2a9b3b3`; faltan Planificador, Placa y Core)
+- [x] `SIGINT`/`SIGTERM` en los 4 módulos: Storage `2a9b3b3`; Planificador, Placa y Core `9793672` (ver [[Utils#`cierre.c` / `cierre.h`: Ctrl-C y SIGTERM]])
 - [ ] Helgrind/DRD en pruebas de stress
 - [x] Scripts de deploy y configs por máquina → [[Despliegue distribuido]] (`deploy/desplegar.sh`, `18d367d`)
 - [x] Pruebas distribuidas: 5 servidores y 4 repartos de módulos (ver [[Suite cátedra 2026-11-14#Repartos de módulos entre servidores]])
