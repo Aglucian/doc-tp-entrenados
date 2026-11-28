@@ -1,0 +1,319 @@
+TP EntrenadOS 2C2026 - RequiemSO
+ENTREGA: COMANDOS PASO A PASO (modo manual, un modulo por VM, rama deploy)
+==============================================================================
+
+0. DATOS DEL DIA (completar)
+------------------------------------------------------------------------------
+  IP PLANIFICADOR: ______________   IP PLACA: ______________
+  IP STORAGE:      ______________   IPs de los Cores: ______________________
+  (ver la IP de cada VM con:  hostname -I)
+
+1. PREPARAR CADA VM (una sola vez)
+------------------------------------------------------------------------------
+  Clonar (en la contrasena de GitHub va el TOKEN):
+    git clone https://github.com/sisoputnfrba/tp-2026-2c-requiemso.git ~/tp-2026-2c-requiemso
+    git clone https://github.com/sisoputnfrba/entrenados-pruebas ~/entrenados-pruebas
+    git config --global credential.helper 'cache --timeout=36000'
+
+  Rama de la entrega (usar 'switch', no 'checkout'):
+    cd ~/tp-2026-2c-requiemso && git switch deploy && git pull
+
+  Si las commons no estan instaladas:
+    git clone https://github.com/sisoputnfrba/so-commons-library ~/so-commons-library
+    cd ~/so-commons-library && sudo make install
+
+2. COMPILAR Y PONER LAS IPs (en cada VM; repetir si cambian las IPs o el reparto)
+------------------------------------------------------------------------------
+    cd ~/tp-2026-2c-requiemso && ./preparar.sh
+      MODULOS : los de esa VM (ej: core  /  placa  /  planificador storage  /  todos)
+      IP PLANIFICADOR / IP PLACA / IP STORAGE : las mismas en todas las VMs
+
+    cd ~/tp-2026-2c-requiemso && ./preparar-pruebas.sh
+      las mismas tres IPs (escribe las IPs en todas las configs de las pruebas)
+      para volver al original:  ./preparar-pruebas.sh --restaurar
+
+3. REGLAS PARA TODAS LAS PRUEBAS
+------------------------------------------------------------------------------
+  - Al EMPEZAR cada prueba, en TODAS las terminales (no en los reinicios de la 04 y la 05):
+      cd ~/entrenados-pruebas/entregas_finales && rm -f *.log
+  - Todo se lanza desde entregas_finales (las rutas de las configs son relativas).
+  - Orden: STORAGE -> PLACA -> PLANIFICADOR -> CORES, esperando que cada uno escuche.
+  - runtime/<prueba> tiene que existir en la maquina de la Placa, del Storage y del
+    Planificador (los comandos de abajo ya lo crean en cada una).
+  - Cada Core con un ID distinto. Para un Core extra: cualquier core-K.config con otro ID.
+  - No correr dos pruebas a la vez (comparten los puertos 8080, 8081 y 8082).
+
+4. LAS PRUEBAS
+------------------------------------------------------------------------------
+
+##############################################################################
+# PRUEBA 01_PLANIFICACION
+##############################################################################
+
+[01_planificacion - FIFO]
+  0) TODAS LAS MAQUINAS:  cd ~/entrenados-pruebas/entregas_finales && rm -f *.log
+  1) MAQUINA DEL STORAGE:
+     rm -rf ./runtime/01_planificacion_fifo && mkdir -p ./runtime/01_planificacion_fifo/storage
+     ~/tp-2026-2c-requiemso/bin/storage "$PWD/escenarios/01_planificacion/configs/FIFO/storage.config"
+  2) MAQUINA DE LA PLACA:
+     mkdir -p ./runtime/01_planificacion_fifo
+     ~/tp-2026-2c-requiemso/bin/placa "$PWD/escenarios/01_planificacion/configs/FIFO/placa.config"
+  3) MAQUINA DEL PLANIFICADOR:
+     mkdir -p ./runtime/01_planificacion_fifo
+     ~/tp-2026-2c-requiemso/bin/planificador "$PWD/escenarios/01_planificacion/configs/FIFO/planificador.config" PLANIFICACION.asm
+  4) MAQUINA(S) DE LOS CORES:
+     ~/tp-2026-2c-requiemso/bin/core "$PWD/escenarios/01_planificacion/configs/core-1.config" 1
+
+[01_planificacion - RR]
+  0) TODAS LAS MAQUINAS:  cd ~/entrenados-pruebas/entregas_finales && rm -f *.log
+  1) MAQUINA DEL STORAGE:
+     rm -rf ./runtime/01_planificacion_rr && mkdir -p ./runtime/01_planificacion_rr/storage
+     ~/tp-2026-2c-requiemso/bin/storage "$PWD/escenarios/01_planificacion/configs/RR/storage.config"
+  2) MAQUINA DE LA PLACA:
+     mkdir -p ./runtime/01_planificacion_rr
+     ~/tp-2026-2c-requiemso/bin/placa "$PWD/escenarios/01_planificacion/configs/RR/placa.config"
+  3) MAQUINA DEL PLANIFICADOR:
+     mkdir -p ./runtime/01_planificacion_rr
+     ~/tp-2026-2c-requiemso/bin/planificador "$PWD/escenarios/01_planificacion/configs/RR/planificador.config" PLANIFICACION.asm
+  4) MAQUINA(S) DE LOS CORES:
+     ~/tp-2026-2c-requiemso/bin/core "$PWD/escenarios/01_planificacion/configs/core-1.config" 1
+
+[01_planificacion - HRRN]
+  0) TODAS LAS MAQUINAS:  cd ~/entrenados-pruebas/entregas_finales && rm -f *.log
+  1) MAQUINA DEL STORAGE:
+     rm -rf ./runtime/01_planificacion_hrrn && mkdir -p ./runtime/01_planificacion_hrrn/storage
+     ~/tp-2026-2c-requiemso/bin/storage "$PWD/escenarios/01_planificacion/configs/HRRN/storage.config"
+  2) MAQUINA DE LA PLACA:
+     mkdir -p ./runtime/01_planificacion_hrrn
+     ~/tp-2026-2c-requiemso/bin/placa "$PWD/escenarios/01_planificacion/configs/HRRN/placa.config"
+  3) MAQUINA DEL PLANIFICADOR:
+     mkdir -p ./runtime/01_planificacion_hrrn
+     ~/tp-2026-2c-requiemso/bin/planificador "$PWD/escenarios/01_planificacion/configs/HRRN/planificador.config" PLANIFICACION.asm
+  4) MAQUINA(S) DE LOS CORES:
+     ~/tp-2026-2c-requiemso/bin/core "$PWD/escenarios/01_planificacion/configs/core-1.config" 1
+
+  Durante / que mirar:
+    Nada que tipear.
+    Mirar planificador.log:
+      FIFO: el Job largo hace su 2da rafaga antes que los cortos.
+      RR:   'Desalojado por fin de quantum' y los cortos terminan primero.
+      HRRN: 'Prioridad HRRN calculada' y los cortos antes que el largo.
+    Fin: 4 Jobs en EXIT.
+
+##############################################################################
+# PRUEBA 02_MEMORIA
+##############################################################################
+
+[02_memoria - LRU]
+  0) TODAS LAS MAQUINAS:  cd ~/entrenados-pruebas/entregas_finales && rm -f *.log
+  1) MAQUINA DEL STORAGE:
+     rm -rf ./runtime/02_memoria_lru && mkdir -p ./runtime/02_memoria_lru/storage
+     ~/tp-2026-2c-requiemso/bin/storage "$PWD/escenarios/02_memoria/configs/LRU/storage.config"
+  2) MAQUINA DE LA PLACA:
+     mkdir -p ./runtime/02_memoria_lru
+     ~/tp-2026-2c-requiemso/bin/placa "$PWD/escenarios/02_memoria/configs/LRU/placa.config"
+  3) MAQUINA DEL PLANIFICADOR:
+     mkdir -p ./runtime/02_memoria_lru
+     ~/tp-2026-2c-requiemso/bin/planificador "$PWD/escenarios/02_memoria/configs/LRU/planificador.config" MEMORIA.asm
+  4) MAQUINA(S) DE LOS CORES:
+     ~/tp-2026-2c-requiemso/bin/core "$PWD/escenarios/02_memoria/configs/core-1.config" 1
+     ~/tp-2026-2c-requiemso/bin/core "$PWD/escenarios/02_memoria/configs/core-2.config" 2
+
+[02_memoria - CLOCK-M]
+  0) TODAS LAS MAQUINAS:  cd ~/entrenados-pruebas/entregas_finales && rm -f *.log
+  1) MAQUINA DEL STORAGE:
+     rm -rf ./runtime/02_memoria_clockm && mkdir -p ./runtime/02_memoria_clockm/storage
+     ~/tp-2026-2c-requiemso/bin/storage "$PWD/escenarios/02_memoria/configs/CLOCK-M/storage.config"
+  2) MAQUINA DE LA PLACA:
+     mkdir -p ./runtime/02_memoria_clockm
+     ~/tp-2026-2c-requiemso/bin/placa "$PWD/escenarios/02_memoria/configs/CLOCK-M/placa.config"
+  3) MAQUINA DEL PLANIFICADOR:
+     mkdir -p ./runtime/02_memoria_clockm
+     ~/tp-2026-2c-requiemso/bin/planificador "$PWD/escenarios/02_memoria/configs/CLOCK-M/planificador.config" MEMORIA.asm
+  4) MAQUINA(S) DE LOS CORES:
+     ~/tp-2026-2c-requiemso/bin/core "$PWD/escenarios/02_memoria/configs/core-1.config" 1
+     ~/tp-2026-2c-requiemso/bin/core "$PWD/escenarios/02_memoria/configs/core-2.config" 2
+
+  Durante / que mirar:
+    Nada que tipear.
+    Mirar placa.log: '## Reemplazo' con victimas de los dos Jobs y
+    'Bajada al Offload' solo de las paginas modificadas.
+    Los reportes tienen que ser iguales con LRU y con CLOCK-M. Fin: 3 Jobs en EXIT.
+
+##############################################################################
+# PRUEBA 03_SERVICIOS
+##############################################################################
+
+[03_servicios]
+  0) TODAS LAS MAQUINAS:  cd ~/entrenados-pruebas/entregas_finales && rm -f *.log
+  1) MAQUINA DEL STORAGE:
+     rm -rf ./runtime/03_servicios && mkdir -p ./runtime/03_servicios/storage
+     ~/tp-2026-2c-requiemso/bin/storage "$PWD/escenarios/03_servicios/configs/storage.config"
+  2) MAQUINA DE LA PLACA:
+     mkdir -p ./runtime/03_servicios
+     ~/tp-2026-2c-requiemso/bin/placa "$PWD/escenarios/03_servicios/configs/placa.config"
+  3) MAQUINA DEL PLANIFICADOR:
+     mkdir -p ./runtime/03_servicios
+     ~/tp-2026-2c-requiemso/bin/planificador "$PWD/escenarios/03_servicios/configs/planificador.config" SERVICIOS.asm
+  4) MAQUINA(S) DE LOS CORES:
+     ~/tp-2026-2c-requiemso/bin/core "$PWD/escenarios/03_servicios/configs/core-1.config" 1
+     ~/tp-2026-2c-requiemso/bin/core "$PWD/escenarios/03_servicios/configs/core-2.config" 2
+
+  Durante / que mirar:
+    En la terminal del PLANIFICADOR, cada vez que aparece '## (N) - Ingrese 8 caracteres:'
+    tipear en este orden:  PERRO001   GATO0002   LORO0003
+    Cada reporte es su lote seguido del texto. Fin: 4 Jobs en EXIT.
+
+##############################################################################
+# PRUEBA 04_STORAGE
+##############################################################################
+
+[04_storage - checkpoints]
+  0) TODAS LAS MAQUINAS:  cd ~/entrenados-pruebas/entregas_finales && rm -f *.log
+  1) MAQUINA DEL STORAGE:
+     rm -rf ./runtime/04_storage_checkpoints && mkdir -p ./runtime/04_storage_checkpoints/storage
+     ~/tp-2026-2c-requiemso/bin/storage "$PWD/escenarios/04_storage/configs/checkpoints/storage.config"
+  2) MAQUINA DE LA PLACA:
+     mkdir -p ./runtime/04_storage_checkpoints
+     ~/tp-2026-2c-requiemso/bin/placa "$PWD/escenarios/04_storage/configs/checkpoints/placa.config"
+  3) MAQUINA DEL PLANIFICADOR:
+     mkdir -p ./runtime/04_storage_checkpoints
+     ~/tp-2026-2c-requiemso/bin/planificador "$PWD/escenarios/04_storage/configs/checkpoints/planificador.config" ST_ENTRENAR.asm
+  4) MAQUINA(S) DE LOS CORES:
+     ~/tp-2026-2c-requiemso/bin/core "$PWD/escenarios/04_storage/configs/core-1.config" 1
+
+[04_storage - fs_lleno]
+  0) TODAS LAS MAQUINAS:  cd ~/entrenados-pruebas/entregas_finales && rm -f *.log
+  1) MAQUINA DEL STORAGE:
+     rm -rf ./runtime/04_storage_fs_lleno && mkdir -p ./runtime/04_storage_fs_lleno/storage
+     ~/tp-2026-2c-requiemso/bin/storage "$PWD/escenarios/04_storage/configs/fs_lleno/storage.config"
+  2) MAQUINA DE LA PLACA:
+     mkdir -p ./runtime/04_storage_fs_lleno
+     ~/tp-2026-2c-requiemso/bin/placa "$PWD/escenarios/04_storage/configs/fs_lleno/placa.config"
+  3) MAQUINA DEL PLANIFICADOR:
+     mkdir -p ./runtime/04_storage_fs_lleno
+     ~/tp-2026-2c-requiemso/bin/planificador "$PWD/escenarios/04_storage/configs/fs_lleno/planificador.config" FS_A.asm
+  4) MAQUINA(S) DE LOS CORES:
+     ~/tp-2026-2c-requiemso/bin/core "$PWD/escenarios/04_storage/configs/core-1.config" 1
+
+  Durante / que mirar:
+    Al terminar la corrida, en la consola del STORAGE:  LS
+    Despues Ctrl-C en el Storage y volver a levantarlo repitiendo SOLO la linea
+    ~/tp-2026-2c-requiemso/bin/storage ... (NO el rm -rf, que borra el volumen)
+    y otra vez:  LS   -> tiene que mostrar lo mismo.
+    checkpoints: un Job carga lo que guardo otro; borrar uno inexistente solo avisa;
+                 cargar uno inexistente -> CHECKPOINT_INEXISTENTE.
+    fs_lleno:    '## ERROR - Directorio lleno...' y '## ERROR - Falta de espacio en FAT...'
+                 -> SIN_ESPACIO_STORAGE.
+
+##############################################################################
+# PRUEBA 05_JOURNAL
+##############################################################################
+
+[05_journal - A]
+  0) TODAS LAS MAQUINAS:  cd ~/entrenados-pruebas/entregas_finales && rm -f *.log
+  1) MAQUINA DEL STORAGE:
+     rm -rf ./runtime/05_journal_a && mkdir -p ./runtime/05_journal_a/storage
+     ~/tp-2026-2c-requiemso/bin/storage "$PWD/escenarios/05_journal/configs/A/storage.config"
+  2) MAQUINA DE LA PLACA:
+     mkdir -p ./runtime/05_journal_a
+     ~/tp-2026-2c-requiemso/bin/placa "$PWD/escenarios/05_journal/configs/A/placa.config"
+  3) MAQUINA DEL PLANIFICADOR:
+     mkdir -p ./runtime/05_journal_a
+     ~/tp-2026-2c-requiemso/bin/planificador "$PWD/escenarios/05_journal/configs/A/planificador.config" JOURNAL.asm
+  4) MAQUINA(S) DE LOS CORES:
+     ~/tp-2026-2c-requiemso/bin/core "$PWD/escenarios/05_journal/configs/core-1.config" 1
+
+[05_journal - B]
+  0) TODAS LAS MAQUINAS:  cd ~/entrenados-pruebas/entregas_finales && rm -f *.log
+  1) MAQUINA DEL STORAGE:
+     rm -rf ./runtime/05_journal_b && mkdir -p ./runtime/05_journal_b/storage
+     ~/tp-2026-2c-requiemso/bin/storage "$PWD/escenarios/05_journal/configs/B/storage.config"
+  2) MAQUINA DE LA PLACA:
+     mkdir -p ./runtime/05_journal_b
+     ~/tp-2026-2c-requiemso/bin/placa "$PWD/escenarios/05_journal/configs/B/placa.config"
+  3) MAQUINA DEL PLANIFICADOR:
+     mkdir -p ./runtime/05_journal_b
+     ~/tp-2026-2c-requiemso/bin/planificador "$PWD/escenarios/05_journal/configs/B/planificador.config" JOURNAL.asm
+  4) MAQUINA(S) DE LOS CORES:
+     ~/tp-2026-2c-requiemso/bin/core "$PWD/escenarios/05_journal/configs/core-1.config" 1
+
+  Durante / que mirar:
+    1. Con todo corriendo, en la maquina del STORAGE (otra terminal) mirar storage.log:
+         tail -f ~/entrenados-pruebas/entregas_finales/storage.log
+       y matarlo con:  pkill -9 -x storage
+         A: despues de '## Asiento iniciado: 2' y antes de su COMMIT (hay unos 10 s)
+         B: despues de '## Nueva marca en asiento: 2: - COMMIT' y antes de su APPLIED
+    2. Ctrl-C en el resto de los modulos. NO borrar runtime/ ni los logs.
+    3. Levantar SOLO el Storage repitiendo SOLO la linea ~/tp-2026-2c-requiemso/bin/storage ...
+       (NO el rm -rf, que borra el volumen). Tiene que loguear
+       '## Recuperacion - Asiento: ...'. En su consola:  LS   y   CAT modelo 16
+    4. Ctrl-C y volver a levantar el Storage:  LS  y  CAT modelo 16  dan lo mismo.
+    5. Con el Storage arriba, levantar Placa, Planificador y Core con el script de verificacion
+       (comandos de abajo).
+    Esperado:  A -> asiento 2 DESCARTADO, modelo de 256 bytes (version anterior)
+               B -> asiento 2 APLICADO,   modelo de 512 bytes (version nueva)
+
+  Verificacion (paso 5, con el Storage ya levantado y sin borrar runtime/):
+  1) MAQUINA DE LA PLACA:
+     ~/tp-2026-2c-requiemso/bin/placa "$PWD/escenarios/05_journal/configs/A/placa.config"
+  2) MAQUINA DEL PLANIFICADOR:
+     ~/tp-2026-2c-requiemso/bin/planificador "$PWD/escenarios/05_journal/configs/A/planificador.config" JOURNAL_VERIFICAR_A.asm
+  3) MAQUINA(S) DE LOS CORES:
+     ~/tp-2026-2c-requiemso/bin/core "$PWD/escenarios/05_journal/configs/core-1.config" 1
+     (para el caso B: configs/B/ y JOURNAL_VERIFICAR_B.asm)
+
+##############################################################################
+# PRUEBA 06_ESTABILIDAD
+##############################################################################
+
+[06_estabilidad]
+  0) TODAS LAS MAQUINAS:  cd ~/entrenados-pruebas/entregas_finales && rm -f *.log
+  1) MAQUINA DEL STORAGE:
+     rm -rf ./runtime/06_estabilidad && mkdir -p ./runtime/06_estabilidad/storage
+     ~/tp-2026-2c-requiemso/bin/storage "$PWD/escenarios/06_estabilidad/configs/storage.config"
+  2) MAQUINA DE LA PLACA:
+     mkdir -p ./runtime/06_estabilidad
+     ~/tp-2026-2c-requiemso/bin/placa "$PWD/escenarios/06_estabilidad/configs/placa.config"
+  3) MAQUINA DEL PLANIFICADOR:
+     mkdir -p ./runtime/06_estabilidad
+     ~/tp-2026-2c-requiemso/bin/planificador "$PWD/escenarios/06_estabilidad/configs/planificador.config" ESTABILIDAD.asm
+  4) MAQUINA(S) DE LOS CORES:
+     ~/tp-2026-2c-requiemso/bin/core "$PWD/escenarios/06_estabilidad/configs/core-1.config" 1
+     ~/tp-2026-2c-requiemso/bin/core "$PWD/escenarios/06_estabilidad/configs/core-2.config" 2
+     ~/tp-2026-2c-requiemso/bin/core "$PWD/escenarios/06_estabilidad/configs/core-3.config" 3
+     ~/tp-2026-2c-requiemso/bin/core "$PWD/escenarios/06_estabilidad/configs/core-4.config" 4
+     (los Cores 3 y 4 se conectan DURANTE la corrida, ver abajo)
+
+  Durante / que mirar:
+    Arrancar SOLO los Cores 1 y 2. Durante la corrida:
+      1. Conectar el Core 3 mientras haya Jobs en READY.
+      2. Ctrl-C en un Core MIENTRAS su log muestra 'Ejecutando: FORWARD' o 'BACKWARD'.
+      3. Volver a conectar ese Core (mismo comando, mismo ID).
+      4. Conectar el Core 4.
+    Al terminar:  INFO  en la consola de la PLACA (0 frames lockeados, 0 Jobs)
+                  LS    en la consola del STORAGE
+    Fin: 13 Jobs en EXIT.
+
+5. ENTRE PRUEBAS
+------------------------------------------------------------------------------
+  Ctrl-C en este orden: CORES -> PLANIFICADOR -> PLACA -> STORAGE.
+  Volver al punto 3 con la prueba siguiente.
+
+6. DONDE QUEDAN LOS LOGS (en cada VM)
+------------------------------------------------------------------------------
+  ~/entrenados-pruebas/entregas_finales/   planificador.log  placa.log  storage.log  core_N.log
+  ~/entrenados-pruebas/entregas_finales/runtime/<prueba>/
+      reportes.log (Planificador)   offload.dat (Placa)   storage/volumen.dat y journal.txt (Storage)
+
+7. SI ALGO FALLA
+------------------------------------------------------------------------------
+  'No se pudo abrir el archivo de configuracion'  -> cd ~/entrenados-pruebas/entregas_finales
+  La Placa no arranca / 'el Job 0 no se pudo crear' -> falta mkdir -p ./runtime/<prueba> en esa VM
+  'No se pudo conectar a Placa/Storage'           -> revisar IPs (./preparar-pruebas.sh) y el orden
+  'Ya hay un Core conectado con el ID N'          -> lanzarlo con otro ID
+  'Address already in use'                        -> quedo un modulo viejo: pkill -x <modulo>
+  "'deploy' could be both a local file..."        -> usar git switch deploy
+  Se cae una VM -> Ctrl-C en todo, ./preparar.sh en otra VM con ese modulo,
+                   ./preparar-pruebas.sh con las IPs nuevas en todas, y repetir la prueba.
+
