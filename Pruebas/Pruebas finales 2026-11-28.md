@@ -1,0 +1,151 @@
+---
+tags: [tp-so, entrenados, pruebas, entregas-finales, informe]
+fecha: 2026-11-28
+rama: deploy (158dc6f)
+repo_pruebas: sisoputnfrba/entrenados-pruebas (e841d29)
+resultado: ok
+---
+
+# Informe: pruebas finales del 28/11/2026
+
+Volver a [[00 - Inicio]] · Corrida anterior: [[Pruebas finales 2026-11-24]] · Práctica manual: [[Laboratorio manual 2026-11-27]]
+
+> [!success] Resultado
+> **Las 6 pruebas finales pasan, en todas sus variantes** (10 corridas), con el código de la rama de entrega `deploy` (`158dc6f`).
+> - 0 errores inesperados en los logs. Todos los `[ERROR]` que aparecen son los avisos esperados de las pruebas que fuerzan errores (04 y 05).
+> - Cada resultado esperado del Documento de Pruebas se verificó contra los logs, los reportes y el `LS`/`CAT` del Storage.
+> - Los resultados coinciden con los del 24/11. Solo cambian la cantidad de desalojos y de reemplazos, que dependen de los tiempos.
+>
+> La batería completa tardó **15 minutos** (00:45 → 01:00).
+
+## 1. Ambiente
+
+| | |
+| --- | --- |
+| Código del TP | Rama `deploy`, commit `158dc6f` (incluye `preparar.sh`, el rechazo de Cores con ID repetido y el log del page fault) |
+| Pruebas | `entrenados-pruebas` `e841d29`, configs de la cátedra sin cambios (solo las IPs) |
+| Máquinas | **2 VMs** (2 CPU cada una): solo la .25 y la .26 estaban disponibles por SSH. La .27, la .28 y la .29 no respondían, y en la .18 y la .31 no hay clave |
+| Reparto | **Placa en la .25** · **Storage y Planificador en la .26** · **Cores alternando**: el 1 y el 3 en la .25, el 2 y el 4 en la .26 |
+| Cómo se corrió | `deploy/catedra.sh` (01, 02, 03) y las secuencias `deploy/pruebas/finales/04_storage.sh`, `05_journal.sh` y `06_estabilidad.sh`, con el reparto pisado por variables de entorno |
+| `LOG_LEVEL` | INFO en todos los módulos |
+
+Antes de correr se cortaron con SIGINT los módulos que quedaban de la práctica manual en la .25 y la .26, y se copió y compiló el código de `deploy` en las dos máquinas (los 4 módulos compilaron sin warnings).
+
+## 2. Resumen
+
+| Prueba | Variante | Duración | Jobs | Resultado |
+| --- | --- | --- | --- | --- |
+| 01 Planificación | FIFO | 1 min 8 s | 4/4 `EXIT` | ✅ |
+| | RR | 1 min 8 s | 4/4 `EXIT` | ✅ |
+| | HRRN | 1 min 7 s | 4/4 `EXIT` | ✅ |
+| 02 Memoria | LRU | 1 min 8 s | 3/3 `EXIT` | ✅ |
+| | CLOCK-M | 1 min 9 s | 3/3 `EXIT` | ✅ |
+| 03 Servicios | — | 46 s | 4/4 `EXIT` | ✅ |
+| 04 Storage | checkpoints + fs_lleno | 1 min 46 s | 6 Jobs: 3 `EXIT` y 3 finalizados por los errores que fuerza la prueba | ✅ |
+| 05 Journal | A + B | 2 min 12 s | 4 Jobs: 2 `ERROR_STORAGE` (esperado) y 2 `EXIT` | ✅ |
+| 06 Estabilidad | — | 4 min 35 s | 13/13 `EXIT` | ✅ |
+
+## 3. Detalle por prueba
+
+### 01 · Planificación (1 Core)
+
+| Variante | Esperado | Obtenido |
+| --- | --- | --- |
+| FIFO | Con los 3 primeros `REPORT` hechos, `PLANI_LARGO` ejecuta su 2.ª ráfaga antes que los cortos | ✅ Orden de los reportes: `78` (JID 1), `02`, `06`, **`F0` (JID 1)**, `04`, `0C` |
+| RR | `PLANI_LARGO` es desalojado por quantum y los cortos terminan antes | ✅ **10 desalojos** del JID 1 (15 transiciones READY→EXEC). Los JID 2 y 3 terminan primero (00:47:37 y 00:47:42) y el JID 1 al final (00:48:07) |
+| HRRN | Los cortos hacen su 2.ª ráfaga antes que `PLANI_LARGO`, y las estimaciones siguen la fórmula | ✅ Reportes `78`, `02`, `06`, **`04`, `0C`**, `F0`. **28/28 estimaciones** = `0,5 · R + 0,5 · S` con `ESTIMACION_INICIAL = 1000` |
+| Las tres | Mismo contenido de los reportes | ✅ JID 1: `78`/`F0` · JID 2: `02`/`04` · JID 3: `06`/`0C`. Cambia solo el orden |
+
+En las tres variantes cada Job tuvo **un page fault** (la página de su `ALLOC`), que ahora se ve en el log del Planificador como `## (N) - Page Fault - Página: 0`. **Ya no aparece el warning del Job inicial.**
+
+### 02 · Memoria (2 Cores)
+
+| Esperado | LRU | CLOCK-M |
+| --- | --- | --- |
+| Víctimas de ambos Jobs | ✅ 16 del JID 1 y 16 del JID 2 | ✅ 18 y 17 |
+| Solo bajan al Offload las víctimas modificadas | ✅ 24 bajadas en 32 reemplazos | ✅ 27 en 35 |
+| Mismos reportes con los dos algoritmos | ✅ | ✅ idénticos a LRU **y a los del 24/11** |
+| Jobs | 3 `EXIT` · 0 errores en 5 logs | 3 `EXIT` · 0 errores en 5 logs |
+
+Los dos Cores atendieron a los dos Jobs. Con LRU, los números son los mismos que el 24/11. Con CLOCK-M cambian levemente (el 24/11 fueron 30 reemplazos), porque dependen de cómo se intercalan los dos Cores; lo que pide la prueba se cumple igual.
+
+### 03 · Servicios (2 Cores)
+- **Cada reporte es exactamente su lote seguido del texto ingresado:** `LOTE-1-…PERRO001`, `LOTE-2-…GATO0002` y `LOTE-3-…LORO0003`. ✅
+- **El Loader siguió atendiendo mientras el Labeler esperaba:** el Loader del Job 2 empezó (00:51:48.463) antes de que el Job 1 entrara al Labeler (48.722) y terminó (52.723) después de que salió (49.456). Lo mismo con el Job 3 y el Labeler del Job 2. ✅
+- Cada servicio atendió una petición por vez, en orden FIFO: 3 Loader, 3 Labeler y 3 Logger. ✅
+- 4 Jobs en `EXIT`, 0 errores.
+
+### 04 · Storage (1 Core)
+
+| Corrida | Esperado | Obtenido |
+| --- | --- | --- |
+| 1 · `ST_ENTRENAR` | Un Job carga el Checkpoint que guardó otro ya finalizado | ✅ `ST_ENTRENAR` (JID 0) guarda `modelo_st` y termina. `ST_CONTINUAR` (JID 1) lo carga y termina en `EXIT`. El JID 2 también lo carga antes de borrarlo, y su reporte es idéntico al del JID 1 |
+| | Eliminar uno inexistente se informa sin finalizar | ✅ Warning `El Checkpoint modelo_st no existe, no se eliminó nada (Job 2)` |
+| | Cargar uno inexistente finaliza al Job | ✅ JID 2 → `CHECKPOINT_INEXISTENTE` |
+| | `LS` igual después de reiniciar el Storage | ✅ `0 entradas ocupadas, 2 libres` antes y después |
+| 2 · `FS_A` | Directorio lleno: se informa y se finaliza | ✅ `## ERROR - Directorio lleno al intentar guardar: ck_5` → `SIN_ESPACIO_STORAGE` |
+| | Falta de espacio: se informa y se finaliza | ✅ `## ERROR - Falta de espacio en FAT al intentar guardar: ck_enorme` → `SIN_ESPACIO_STORAGE` |
+| | Sobrescribir con un tamaño menor libera bloques reutilizables | ✅ `ck_grande` queda en 128 bytes y `ck_otro` (1472 bytes) entra. El reporte (`00070E15…`) es idéntico al del 24/11 |
+| | `LS` igual después de reiniciar el Storage | ✅ Las mismas 4 entradas (`ck_1`, `ck_grande`, `ck_otro`, `ck_4`) antes y después |
+
+Los dos `## ERROR` del Storage ahora salen en nivel INFO (`b93dfdd`), como pide el enunciado para los logs obligatorios.
+
+### 05 · Journal (1 Core)
+
+| | Caso A | Caso B |
+| --- | --- | --- |
+| Momento del `kill -9` | Después de `## Asiento iniciado: 2` y antes de su COMMIT | Después de `## Nueva marca en asiento: 2: - COMMIT` y antes de su APPLIED |
+| Recuperación | Asientos 1 y 2: `DESCARTADO` | Asiento 1: `DESCARTADO` · asiento 2: **`APLICADO`** |
+| `LS` / `CAT modelo 16` | `modelo` de 256 bytes, `V1-BLOQUE-00-111` (versión anterior), igual después de reiniciar | `modelo` de 512 bytes, `V2-BLOQUE-00-222` (versión nueva), igual después de reiniciar |
+| `JOURNAL_VERIFICAR_*` | `56312D…313131` + `3131…31` = versión anterior ✅ | `56322D…323232` + `3232…32` = versión nueva completa ✅ |
+
+En los dos casos, el Job de la primera corrida termina con `ERROR_STORAGE` (se mató al Storage en medio de su pedido) y el de verificación con `EXIT`. En esta corrida no se repitió la revisión byte a byte de bloques huérfanos del 24/11 (había dado 0).
+
+### 06 · Estabilidad General (hasta 4 Cores · HRRN + CLOCK-M)
+
+| Actividad (documento) | Cuándo | Resultado |
+| --- | --- | --- |
+| Arrancar con los Cores 1 y 2 | 00:56:26 / 00:56:27 | ✅ |
+| Conectar un Core con Jobs en READY | Core 3, 00:56:33 | ✅ |
+| Finalizar un Core mientras ejecuta FORWARD o BACKWARD | Core 1, cortado **en la línea** `## JID: 3 - Ejecutando: FORWARD - P1 P2 P3 AX` (00:56:44) | ✅ El Planificador: `El Core 1 se desconectó ejecutando el Job 3` → `## (3) - Deslockeo de páginas` → EXEC→READY. El Job 3 terminó en `EXIT` a las 00:58:04 en otro Core |
+| Volver a conectar el Core finalizado | Core 1, 00:56:54 (mismo ID, aceptado) | ✅ |
+| Conectar otro Core | Core 4, 00:57:05 | ✅ |
+| Al final: `INFO` en la Placa y `LS` en el Storage | | ✅ Placa: memoria 0 %, Offload 0 %, **64 frames libres, 0 lockeados, 0 Jobs**. Storage: 6 checkpoints `est_*` |
+
+- **13/13 Jobs en `EXIT`**. 0 errores en los 7 logs; el único warning es el de la desconexión del Core 1, que es parte de la prueba.
+- Los 4 Cores atendieron entre 9 y 10 Jobs distintos cada uno.
+- **HRRN: 670/670 estimaciones** coinciden con `0,5 · R + 0,5 · S` (`ESTIMACION_INICIAL = 500`).
+- Memoria: 566 subidas, 354 reemplazos con víctimas de los 12 Jobs, y 225 bajadas al Offload.
+
+## 4. Práctica manual (27 y 28/11)
+Además del runner, se corrió a mano como en el laboratorio, con `./preparar.sh` en cada VM (ver [[Laboratorio manual 2026-11-27]]):
+
+| Prueba | Reparto | Resultado |
+| --- | --- | --- |
+| 01 FIFO | Planificador .31 · Placa .18 · Storage .26 · Core 1 en la .25 | ✅ 4/4 `EXIT` |
+| 01 RR | El mismo, con 2 Cores en la .25 | ✅ El Job largo con 14 transiciones READY→EXEC (desalojado por quantum) y `EXIT` |
+
+## 5. Comparación con el 24/11
+
+| | 24/11 | 28/11 |
+| --- | --- | --- |
+| Código | `develop` (`ea9ea8b`) | `deploy` (`158dc6f`) |
+| Máquinas | 5 | 2 |
+| Resultado | 6/6 ✅ | 6/6 ✅ |
+| Reportes 01, 02, 03 y 04 | — | Mismo contenido |
+| Journal (05) | A descarta, B re-aplica | Igual |
+| Estabilidad (06) | 13/13 `EXIT` | 13/13 `EXIT` |
+| Warning del Job inicial | Aparecía en todas las corridas | Ya no aparece |
+| Log de page fault en el Planificador | No había | `## (N) - Page Fault - Página: P` |
+
+**Diferencias esperables:** la cantidad de desalojos en RR (13 → 10) y de reemplazos en CLOCK-M (30 → 35). Dependen de cuánto tarda cada mensaje entre máquinas y de cómo se intercalan los Cores. Lo que verifica cada prueba (quién termina primero, víctimas de ambos Jobs, bajadas solo de modificadas, contenido de los reportes) es igual.
+
+## 6. Observaciones
+- **Sin re-verificación de recursos:** no se repitió la corrida bajo valgrind ni la medición de CPU de la 06. Los cambios desde el 24/11 (cierre con Ctrl-C, ID de Cores, log del page fault) no tocan memoria dinámica. Para repetirla está `deploy/pruebas/finales/verificar_recursos.sh`.
+- **Al loguearse en la .26, el shell imprime la salida de `ifconfig`** (lo agrega el `.bashrc` de esa VM). Aparece en las salidas de consola de los módulos pero no afecta nada.
+- **En el laboratorio**, las pruebas se corren a mano; este informe usa el runner para cubrir las 10 corridas con los mismos criterios. El modo manual ya se validó con la 01 (sección 4).
+
+## 7. Conclusión
+El TP en la rama `deploy` cumple **las 6 pruebas finales** del documento de la cátedra, distribuido en varias máquinas y con Cores que entran y salen en plena ejecución. Pendiente antes de cerrar la entrega: llevar `deploy` a `develop` y a `main`.
+
+Resultados completos en `tp-2026-2c-requiemso/deploy/resultados/catedra-entregas_finales-*-20261128-*` (no se versionan).
