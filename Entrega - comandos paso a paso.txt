@@ -1,5 +1,5 @@
 TP EntrenadOS 2C2026 - RequiemSO
-ENTREGA: COMANDOS PASO A PASO (modo manual, un modulo por VM, rama deploy)
+ENTREGA: COMANDOS PASO A PASO (modo manual, un modulo por VM, rama main)
 ==============================================================================
 
 0. DATOS DEL DIA (completar)
@@ -10,13 +10,10 @@ ENTREGA: COMANDOS PASO A PASO (modo manual, un modulo por VM, rama deploy)
 
 1. PREPARAR CADA VM (una sola vez)
 ------------------------------------------------------------------------------
-  Clonar (en la contrasena de GitHub va el TOKEN):
+  Clonar el TP (queda en main, la rama de la entrega; en la contrasena de GitHub va el TOKEN):
     git clone https://github.com/sisoputnfrba/tp-2026-2c-requiemso.git ~/tp-2026-2c-requiemso
+  Clonar las pruebas:
     git clone https://github.com/sisoputnfrba/entrenados-pruebas ~/entrenados-pruebas
-    git config --global credential.helper 'cache --timeout=36000'
-
-  Rama de la entrega (usar 'switch', no 'checkout'):
-    cd ~/tp-2026-2c-requiemso && git switch deploy && git pull
 
   Si las commons no estan instaladas:
     git clone https://github.com/sisoputnfrba/so-commons-library ~/so-commons-library
@@ -313,7 +310,6 @@ ENTREGA: COMANDOS PASO A PASO (modo manual, un modulo por VM, rama deploy)
   'No se pudo conectar a Placa/Storage'           -> revisar IPs (./preparar-pruebas.sh) y el orden
   'Ya hay un Core conectado con el ID N'          -> lanzarlo con otro ID
   'Address already in use'                        -> quedo un modulo viejo: pkill -x <modulo>
-  "'deploy' could be both a local file..."        -> usar git switch deploy
   Se cae una VM -> Ctrl-C en todo, ./preparar.sh en otra VM con ese modulo,
                    ./preparar-pruebas.sh con las IPs nuevas en todas, y repetir la prueba.
 

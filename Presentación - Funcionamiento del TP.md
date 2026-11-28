@@ -417,12 +417,12 @@ hilo de cierre: sigwait() → log "Se recibió SIGINT: el módulo finaliza"
 
 ## 8 · Deploy: preparar las máquinas
 
-Cada módulo se levanta **a mano en su VM** (rama `deploy`). En cada VM, una sola vez:
+Cada módulo se levanta **a mano en su VM** (rama `main`). En cada VM, una sola vez:
 
 ```bash
 git clone https://github.com/sisoputnfrba/tp-2026-2c-requiemso.git   # en la contraseña va el token
 git clone https://github.com/sisoputnfrba/entrenados-pruebas
-cd ~/tp-2026-2c-requiemso && git switch deploy && git pull && ./preparar.sh
+cd ~/tp-2026-2c-requiemso && ./preparar.sh && ./preparar-pruebas.sh
 ```
 
 `preparar.sh` (las commons ya están instaladas):
@@ -431,7 +431,8 @@ cd ~/tp-2026-2c-requiemso && git switch deploy && git pull && ./preparar.sh
 3. Limpia y recompila esos módulos
 4. Crea `bin/<módulo>` para usar tal cual los comandos del README de cada prueba
 
-- `git switch` y no `git checkout`: en el repo hay una **carpeta** `deploy/` con el mismo nombre que la rama
+- El clon queda en `main`: no hay que cambiar de rama
+- `preparar-pruebas.sh` pide las mismas tres IPs y las escribe en las configs de las pruebas
 - Volver a correrlo pide todo de nuevo y recompila
 
 ---
@@ -475,8 +476,8 @@ En **todas** las VMs: `cd ~/entrenados-pruebas/entregas_finales`. Después, los 
 ## 8 · Deploy: checklist del día
 
 1. Anotar la IP de cada VM (`hostname -I`) y decidir el reparto
-2. En cada VM: `git switch deploy && git pull && ./preparar.sh`
-3. Editar a mano las IPs en las configs de la prueba (Planificador y Cores)
+2. En cada VM: `./preparar.sh`
+3. En cada VM: `./preparar-pruebas.sh` con las mismas IPs
 4. `cd ~/entrenados-pruebas/entregas_finales` en **todas** las terminales
 5. **`mkdir -p ./runtime/<prueba>` en cada máquina** (Placa: Offload · Storage: volumen · Planificador: reportes)
 6. Lanzar en orden y mirar los logs: `placa.log`, `planificador.log`, `storage.log` y `core_N.log` quedan en `entregas_finales/`

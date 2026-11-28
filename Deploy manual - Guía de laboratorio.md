@@ -8,7 +8,7 @@ rama: deploy
 
 Volver a [[00 - Inicio]] · Ver también [[Despliegue distribuido]], [[Laboratorio manual 2026-11-27]], [[Pruebas finales 2026-11-28]]
 
-Cada módulo se levanta **a mano en su VM**, desde la rama `deploy`. Objetivo: el ambiente listo en **menos de 10 minutos**.
+Cada módulo se levanta **a mano en su VM**, desde la rama `main` (la de la entrega). Objetivo: el ambiente listo en **menos de 10 minutos**.
 
 ## 0. Datos del día (completar)
 
@@ -28,16 +28,13 @@ En una sola máquina también funciona: `MÓDULOS : todos` y las tres IPs iguale
 ```bash
 git clone https://github.com/sisoputnfrba/tp-2026-2c-requiemso.git ~/tp-2026-2c-requiemso
 git clone https://github.com/sisoputnfrba/entrenados-pruebas ~/entrenados-pruebas
-git config --global credential.helper 'cache --timeout=36000'
 ```
-El `credential.helper` recuerda el token 10 horas, sin escribirlo en disco. Las commons ya están instaladas.
+El TP se clona **una sola vez** y queda en `main`: no hace falta cambiar de rama ni hacer `pull`. Las commons ya están instaladas.
 
-**1.2 Rama y compilación:**
+**1.2 Compilación:**
 ```bash
-cd ~/tp-2026-2c-requiemso && git switch deploy && git pull && ./preparar.sh
+cd ~/tp-2026-2c-requiemso && ./preparar.sh
 ```
-- `git switch` y **no** `git checkout`: en el repo hay una carpeta `deploy/` con el mismo nombre que la rama.
-- Si `git pull` dice *There is no tracking information*: `git branch --set-upstream-to=origin/deploy deploy`.
 
 **1.3 Respuestas de `preparar.sh`:**
 - `MÓDULOS :` los de esa VM (`placa`, `core`, `planificador storage`, `todos`…)
@@ -47,7 +44,7 @@ El script limpia, recompila y deja los binarios en `~/tp-2026-2c-requiemso/bin/`
 
 ## 2. Configs de la cátedra (IPs)
 
-Las configs de `entrenados-pruebas` traen `127.0.0.1`. Hay que cambiarlo **en cada VM**, en las configs de los módulos que corren ahí:
+Las configs de `entrenados-pruebas` traen `127.0.0.1`. Las claves que importan:
 
 | Config | Claves | En qué VM |
 | --- | --- | --- |
@@ -55,11 +52,11 @@ Las configs de `entrenados-pruebas` traen `127.0.0.1`. Hay que cambiarlo **en ca
 | `core-N.config` | `IP_PLANIFICADOR`, `IP_PLACA` | Las de los Cores |
 | `placa.config`, `storage.config` | ninguna (solo escuchan) | — |
 
-Opcional: todas las configs de todas las pruebas en un solo comando (completar las IPs):
+Se hace con un script, **en cada VM** y con las mismas tres IPs que `preparar.sh`:
 ```bash
-cd ~/entrenados-pruebas/entregas_finales && sed -i -e 's/^IP_PLANIFICADOR=.*/IP_PLANIFICADOR=X.X.X.X/' -e 's/^IP_PLACA=.*/IP_PLACA=Y.Y.Y.Y/' -e 's/^IP_STORAGE=.*/IP_STORAGE=Z.Z.Z.Z/' $(find escenarios -name '*.config')
+cd ~/tp-2026-2c-requiemso && ./preparar-pruebas.sh
 ```
-Para volver al original: `git -C ~/entrenados-pruebas checkout -- .`
+Escribe las IPs en todas las configs de todas las pruebas. Para volver al original: `./preparar-pruebas.sh --restaurar`.
 
 ## 3. Antes de cada prueba (en cada VM)
 
@@ -159,5 +156,4 @@ En cada VM, en `~/entrenados-pruebas/entregas_finales/`: `planificador.log`, `pl
 | El Core no conecta | IP mal en `core-N.config`, o el Planificador no está arriba | Revisar las IPs; levantar el Planificador primero |
 | `Ya hay un Core conectado con el ID N` | ID repetido | Lanzarlo con otro ID |
 | `Address already in use` | Quedó un módulo de la prueba anterior | `pkill -x <módulo>` en esa VM |
-| `'deploy' could be both a local file and a tracking branch` | `git checkout deploy` | `git switch deploy` |
 | Se cae una VM | — | Ctrl-C en todo; en otra VM `./preparar.sh` con ese módulo; ajustar las IPs y repetir la prueba |

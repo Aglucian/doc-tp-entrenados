@@ -15,9 +15,9 @@ Volver a [[00 - Inicio]] · Ver también [[Estado de ramas]], [[Protocolo]]
 >
 > - **Sin esperas activas ni memory leaks** (prueba 06): verificado con valgrind en los 4 módulos y midiendo la CPU.
 >
-> - **Entrega en modo manual** desde la rama `deploy` con `./preparar.sh`: la 01 FIFO pasó en 4 máquinas ([[Laboratorio manual 2026-11-27]]).
+> - **Entrega en modo manual** desde `main` (clonado una vez) con `./preparar.sh` y `./preparar-pruebas.sh`: la 01 FIFO pasó en 4 máquinas ([[Laboratorio manual 2026-11-27]]).
 >
-> **Lo que falta:** practicar el resto de las pruebas en modo manual, commitear el log del page fault, y llevar `deploy` a `develop` y a `main`.
+> **Lo que falta:** el PR de `deploy` a `main` (la entrega se clona de `main`).
 
 Roles (de [[distribucion-equipo]], en `Repo TP/doc/`):
 - **D1**: Planificador, planificación

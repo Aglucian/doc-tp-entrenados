@@ -14,14 +14,14 @@ El enunciado dice que la cantidad de computadoras y la distribución de los proc
 > [!info] Dónde está `deploy/`
 > Desde el 28/11, `deploy/` no está en el repo del TP: se movió a este vault, en `Repo TP/deploy/`. Para usar las herramientas de esta nota hay que copiarlo de vuelta dentro del TP (ver [[Uso de deploy]]).
 
-## Entrega: modo manual en cada VM (rama `deploy`)
+## Entrega: modo manual en cada VM (rama `main`)
 
 > [!important] Así se va a correr en el laboratorio
 > Cada módulo se levanta **a mano en su VM**, sin SSH entre máquinas. Las herramientas por SSH de esta nota (`desplegar.sh`, `catedra.sh`) quedan para nuestras pruebas. Práctica completa en [[Laboratorio manual 2026-11-27]].
 
-En cada VM: clonar el TP (con el token), `so-commons-library` (instalada) y `entrenados-pruebas`. Después:
+En cada VM: clonar el TP una sola vez (con el token; queda en `main`), `so-commons-library` (instalada) y `entrenados-pruebas`. Después:
 ```bash
-cd ~/tp-2026-2c-requiemso && git switch deploy && git pull && ./preparar.sh
+cd ~/tp-2026-2c-requiemso && ./preparar.sh
 ```
 
 `preparar.sh`:
