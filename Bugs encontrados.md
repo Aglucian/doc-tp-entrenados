@@ -7,7 +7,7 @@ actualizado: 2026-11-25
 
 Volver a [[00 - Inicio]] · Ver también [[Estado de ramas]], [[Protocolo]]
 
-Registro de los bugs que aparecieron en cada rama del TP: qué fallaba, qué problema causaba y en qué commit se corrigió. Solo vive en este vault; el límite del livelock también está en `doc/limites-conocidos.md` del repo del TP. Detalle de cada módulo en [[Planificador]], [[Core]], [[Placa]], [[Storage]] y [[Utils]].
+Registro de los bugs que aparecieron en cada rama del TP: qué fallaba, qué problema causaba y en qué commit se corrigió. Solo vive en este vault; el límite del livelock también está en [[limites-conocidos]] (`Repo TP/doc/`). Detalle de cada módulo en [[Planificador]], [[Core]], [[Placa]], [[Storage]] y [[Utils]].
 
 - **Fecha**: la del commit que lo corrige.
 - **Integración**: el PR con el que el arreglo llegó a `develop` (o a `main`, si se hizo directo en `develop`).

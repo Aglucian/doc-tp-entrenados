@@ -1,0 +1,536 @@
+{
+    "name": "EntrenadOS — TP SO 2C2026 (UTN) · Desarrollo detallado",
+    "defaultLists": false,
+    "labels": [
+        { "name": "Planificador", "color": "blue", "id": "lab_plan" },
+        { "name": "Core", "color": "purple", "id": "lab_core" },
+        { "name": "Placa", "color": "green", "id": "lab_placa" },
+        { "name": "Storage", "color": "orange", "id": "lab_storage" },
+        { "name": "Grupo/Admin", "color": "red", "id": "lab_grupo" },
+        { "name": "Testing/Logs", "color": "yellow", "id": "lab_testing" },
+        { "name": "Infra/Protocolo", "color": "sky", "id": "lab_infra" }
+    ],
+    "customFields": [
+        {
+            "id": "cf_fecha",
+            "display": { "cardFront": true },
+            "name": "Fecha objetivo",
+            "type": "date"
+        },
+        {
+            "id": "cf_done",
+            "display": { "cardFront": true },
+            "name": "Completado",
+            "type": "checkbox"
+        }
+    ],
+    "lists": [
+        {
+            "name": "📌 Semana 0 · Setup y Transversales",
+            "cards": [
+                {
+                    "name": "Confirmar grupo de 5 integrantes (cierre 05/09 → baja del TP)",
+                    "idLabels": ["lab_grupo"],
+                    "customFieldItems": [
+                        { "value": { "date": "2026-09-05T03:00:00.000Z" }, "idValue": null, "idCustomField": "cf_fecha" },
+                        { "value": { "checked": "true" }, "idValue": null, "idCustomField": "cf_done" }
+                    ]
+                },
+                {
+                    "name": "Leer Normas del TP + suscribirse al foro de GitHub (decisiones de diseño se justifican en el coloquio)",
+                    "idLabels": ["lab_grupo"]
+                },
+                {
+                    "name": "VM Linux + toolchain C + so-commons-library; compilar y correr un hello-world con commons-log",
+                    "idLabels": ["lab_infra"],
+                    "customFieldItems": [
+                        { "value": { "checked": "true" }, "idValue": null, "idCustomField": "cf_done" }
+                    ]
+                },
+                {
+                    "name": "Diseñar protocolo de mensajes: opcodes, header (tamaño/tipo), serialización de structs y variables",
+                    "idLabels": ["lab_infra"],
+                    "desc": "utils/protocolo_entrenados.h + serializacion.c. Pendiente: actualizar los comentarios de OP_DEVOLUCION ({jid u32, motivo u8, contexto}) y OP_INTERRUPCION ({jid u32, motivo u32}).",
+                    "customFieldItems": [
+                        { "value": { "checked": "true" }, "idValue": null, "idCustomField": "cf_done" }
+                    ]
+                },
+                {
+                    "name": "Estructura de repo: un directorio por módulo (planificador/core/placa/storage) + Makefile común",
+                    "idLabels": ["lab_infra"],
+                    "customFieldItems": [
+                        { "value": { "checked": "true" }, "idValue": null, "idCustomField": "cf_done" }
+                    ]
+                },
+                {
+                    "name": "Wrapper común de logs: commons LOG_LEVEL_INFO a archivo, formato '## ...' del enunciado por módulo",
+                    "idLabels": ["lab_infra", "lab_testing"],
+                    "customFieldItems": [
+                        { "value": { "checked": "true" }, "idValue": null, "idCustomField": "cf_done" }
+                    ]
+                },
+                {
+                    "name": "Scripts de deployment: levantar los 4 procesos con sus configs desde una máquina (la distribución cambia en cada test)",
+                    "idLabels": ["lab_infra"],
+                    "desc": "Pendiente: no hay scripts en el repo. Hoy se levanta cada módulo a mano (Placa y Storage, luego Planificador, luego Cores)."
+                },
+                {
+                    "name": "⚠️ Recordatorio: solo conectividad/serialización/sincronización = desaprobación directa",
+                    "idLabels": ["lab_grupo"]
+                },
+                {
+                    "name": "Ventana de cambios de grupo 13/09–24/10 (máx 1 por alumno)",
+                    "idLabels": ["lab_grupo"],
+                    "customFieldItems": [
+                        { "value": { "date": "2026-09-13T03:00:00.000Z" }, "idValue": null, "idCustomField": "cf_fecha" }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "Check 1 · 12/09 · Conexiones y Serialización",
+            "cards": [
+                {
+                    "name": "Planificador: ./bin/planificador [config] [path job inicial] — conectarse primero a Placa y Storage",
+                    "idLabels": ["lab_plan"],
+                    "customFieldItems": [
+                        { "value": { "date": "2026-09-12T03:00:00.000Z" }, "idValue": null, "idCustomField": "cf_fecha" },
+                        { "value": { "checked": "true" }, "idValue": null, "idCustomField": "cf_done" }
+                    ]
+                },
+                {
+                    "name": "Planificador: servidor multihilo para Cores con escucha siempre activa (conexión/desconexión en runtime)",
+                    "idLabels": ["lab_plan"],
+                    "customFieldItems": [
+                        { "value": { "date": "2026-09-12T03:00:00.000Z" }, "idValue": null, "idCustomField": "cf_fecha" },
+                        { "value": { "checked": "true" }, "idValue": null, "idCustomField": "cf_done" }
+                    ]
+                },
+                {
+                    "name": "Placa y Storage: servidor multihilo (Planificador + Cores; Storage solo Planificador)",
+                    "idLabels": ["lab_placa", "lab_storage"],
+                    "customFieldItems": [
+                        { "value": { "date": "2026-09-12T03:00:00.000Z" }, "idValue": null, "idCustomField": "cf_fecha" },
+                        { "value": { "checked": "true" }, "idValue": null, "idCustomField": "cf_done" }
+                    ],
+                    "desc": "El handshake del Storage se corrigió el 08/10 (antes cerraba la conexión y el Planificador abortaba)."
+                },
+                {
+                    "name": "Core: ./bin/core [config] [identificador] — config y log independientes por Core (nombrados por ID)",
+                    "idLabels": ["lab_core"],
+                    "customFieldItems": [
+                        { "value": { "date": "2026-09-12T03:00:00.000Z" }, "idValue": null, "idCustomField": "cf_fecha" },
+                        { "value": { "checked": "true" }, "idValue": null, "idCustomField": "cf_done" }
+                    ]
+                },
+                {
+                    "name": "Core: conectarse a Planificador y Placa (requiere que estén iniciados antes)",
+                    "idLabels": ["lab_core"],
+                    "customFieldItems": [
+                        { "value": { "date": "2026-09-12T03:00:00.000Z" }, "idValue": null, "idCustomField": "cf_fecha" },
+                        { "value": { "checked": "true" }, "idValue": null, "idCustomField": "cf_done" }
+                    ]
+                },
+                {
+                    "name": "Handshake inicial de identificación en cada conexión (módulo ↔ módulo)",
+                    "idLabels": ["lab_infra", "lab_core"],
+                    "customFieldItems": [
+                        { "value": { "date": "2026-09-12T03:00:00.000Z" }, "idValue": null, "idCustomField": "cf_fecha" },
+                        { "value": { "checked": "true" }, "idValue": null, "idCustomField": "cf_done" }
+                    ]
+                },
+                {
+                    "name": "Serialización: enviar/recibir paquete de mensajes de prueba (recv completo, sin cuelgues ni cortes)",
+                    "idLabels": ["lab_infra"],
+                    "customFieldItems": [
+                        { "value": { "date": "2026-09-12T03:00:00.000Z" }, "idValue": null, "idCustomField": "cf_fecha" },
+                        { "value": { "checked": "true" }, "idValue": null, "idCustomField": "cf_done" }
+                    ]
+                },
+                {
+                    "name": "Logs obligatorios: 'Conexión recibida: ## Módulo: <NOMBRE>' en los 4 procesos + config de puertos/IPs",
+                    "idLabels": ["lab_testing"],
+                    "customFieldItems": [
+                        { "value": { "date": "2026-09-12T03:00:00.000Z" }, "idValue": null, "idCustomField": "cf_fecha" },
+                        { "value": { "checked": "true" }, "idValue": null, "idCustomField": "cf_done" }
+                    ]
+                },
+                {
+                    "name": "Ensayo del check: levantar los 4 procesos aislados y validar handshakes por logs",
+                    "idLabels": ["lab_testing"],
+                    "customFieldItems": [
+                        { "value": { "date": "2026-09-12T03:00:00.000Z" }, "idValue": null, "idCustomField": "cf_fecha" },
+                        { "value": { "checked": "true" }, "idValue": null, "idCustomField": "cf_done" }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "Check 2 · 10/10 · Planificación y Ejecución Básica",
+            "cards": [
+                {
+                    "name": "Core: registros uint32_t — PC, P0–P5, AX/BX/CX/DX, E1–E3 — y recepción del contexto de ejecución",
+                    "idLabels": ["lab_core"],
+                    "customFieldItems": [
+                        { "value": { "date": "2026-10-10T03:00:00.000Z" }, "idValue": null, "idCustomField": "cf_fecha" },
+                        { "value": { "checked": "true" }, "idValue": null, "idCustomField": "cf_done" }
+                    ]
+                },
+                {
+                    "name": "Core: Fetch — pedir instrucción a la Placa por PC + log 'FETCH - Program Counter: <PC>'",
+                    "idLabels": ["lab_core", "lab_placa"],
+                    "customFieldItems": [
+                        { "value": { "date": "2026-10-10T03:00:00.000Z" }, "idValue": null, "idCustomField": "cf_fecha" },
+                        { "value": { "checked": "true" }, "idValue": null, "idCustomField": "cf_done" }
+                    ]
+                },
+                {
+                    "name": "Core: Execute de instrucciones básicas — NOOP, SET, SUM, SUB, JNZ (PC+1 salvo salto)",
+                    "idLabels": ["lab_core"],
+                    "customFieldItems": [
+                        { "value": { "date": "2026-10-10T03:00:00.000Z" }, "idValue": null, "idCustomField": "cf_fecha" },
+                        { "value": { "checked": "true" }, "idValue": null, "idCustomField": "cf_done" }
+                    ]
+                },
+                {
+                    "name": "Core: Check Interrupt — atender interrupción del Planificador devolviendo JID + contexto con motivo",
+                    "idLabels": ["lab_core", "lab_plan"],
+                    "customFieldItems": [
+                        { "value": { "date": "2026-10-10T03:00:00.000Z" }, "idValue": null, "idCustomField": "cf_fecha" },
+                        { "value": { "checked": "true" }, "idValue": null, "idCustomField": "cf_done" }
+                    ]
+                },
+                {
+                    "name": "Placa: memoria de instrucciones — asociar Job ↔ archivo de pseudocódigo y responder por PC",
+                    "idLabels": ["lab_placa"],
+                    "customFieldItems": [
+                        { "value": { "date": "2026-10-10T03:00:00.000Z" }, "idValue": null, "idCustomField": "cf_fecha" },
+                        { "value": { "checked": "true" }, "idValue": null, "idCustomField": "cf_done" }
+                    ],
+                    "desc": "PC 0-based. El Job se crea con path relativo a PATH_INSTRUCCIONES."
+                },
+                {
+                    "name": "Planificador: Job inicial (JID 0) por parámetro + syscall INIT_JOB crea Jobs en NEW (sin bloquear)",
+                    "idLabels": ["lab_plan"],
+                    "customFieldItems": [
+                        { "value": { "date": "2026-10-10T03:00:00.000Z" }, "idValue": null, "idCustomField": "cf_fecha" },
+                        { "value": { "checked": "true" }, "idValue": null, "idCustomField": "cf_done" }
+                    ],
+                    "desc": "INIT_JOB implementado en Planificador y Core."
+                },
+                {
+                    "name": "Planificador: largo plazo NEW→READY FIFO respetando GRADO_MULTIPROGRAMACION; EXIT libera estructuras",
+                    "idLabels": ["lab_plan"],
+                    "customFieldItems": [
+                        { "value": { "date": "2026-10-10T03:00:00.000Z" }, "idValue": null, "idCustomField": "cf_fecha" },
+                        { "value": { "checked": "true" }, "idValue": null, "idCustomField": "cf_done" }
+                    ]
+                },
+                {
+                    "name": "Planificador: corto plazo electivo por config — FIFO, RR (RR_QUANTUM), HRRN (ESTIMACION_INICIAL + HRRN_ALFA)",
+                    "idLabels": ["lab_plan"],
+                    "customFieldItems": [
+                        { "value": { "date": "2026-10-10T03:00:00.000Z" }, "idValue": null, "idCustomField": "cf_fecha" },
+                        { "value": { "checked": "true" }, "idValue": null, "idCustomField": "cf_done" }
+                    ],
+                    "desc": "FIFO, RR y HRRN hechos. HRRN: prioridad (W + S) / S con W = espera actual en READY, estimación = HRRN_ALFA * ráfaga real + (1 - HRRN_ALFA) * estimación anterior, no expropiativo. Verificado el 08/10: con una segunda ráfaga, HRRN elige al Job de ráfaga estimada más corta mientras FIFO elige al que llegó antes."
+                },
+                {
+                    "name": "Planificador: cambio de contexto — enviar contexto al despachar, recibirlo actualizado, desalojo por fin de quantum",
+                    "idLabels": ["lab_plan"],
+                    "customFieldItems": [
+                        { "value": { "date": "2026-10-10T03:00:00.000Z" }, "idValue": null, "idCustomField": "cf_fecha" },
+                        { "value": { "checked": "true" }, "idValue": null, "idCustomField": "cf_done" }
+                    ]
+                },
+                {
+                    "name": "Planificador: modelo de 5 estados + log obligatorio de cada transición '<JID> pasa de <ESTADO> a <ESTADO>'",
+                    "idLabels": ["lab_plan", "lab_testing"],
+                    "customFieldItems": [
+                        { "value": { "date": "2026-10-10T03:00:00.000Z" }, "idValue": null, "idCustomField": "cf_fecha" },
+                        { "value": { "checked": "true" }, "idValue": null, "idCustomField": "cf_done" }
+                    ],
+                    "desc": "BLOCKED se usa a partir del Check 3."
+                },
+                {
+                    "name": "Syscall EXIT: finalizar Job con motivo y estadísticas en el log",
+                    "idLabels": ["lab_plan"],
+                    "customFieldItems": [
+                        { "value": { "date": "2026-10-10T03:00:00.000Z" }, "idValue": null, "idCustomField": "cf_fecha" },
+                        { "value": { "checked": "true" }, "idValue": null, "idCustomField": "cf_done" }
+                    ],
+                    "desc": "Memoria dinámica máxima y page faults salen en 0 hasta el Check 3."
+                },
+                {
+                    "name": "Ensayo del check: loops contadores (NOOP/SET/SUM/SUB/JNZ) concurrentes; quantums y READY/EXEC/EXIT en logs",
+                    "idLabels": ["lab_testing"],
+                    "customFieldItems": [
+                        { "value": { "date": "2026-10-10T03:00:00.000Z" }, "idValue": null, "idCustomField": "cf_fecha" },
+                        { "value": { "checked": "true" }, "idValue": null, "idCustomField": "cf_done" }
+                    ],
+                    "desc": "Verificado el 08/10 en develop: FIFO y RR (quantum 1500, RETARDO_MEMORIA 10) con 1 y 2 Cores, 3 Jobs vía INIT_JOB, 0 errores en logs y sin pérdidas de memoria en valgrind. Falta el ensayo del grupo."
+                }
+            ]
+        },
+        {
+            "name": "Check 3 · 31/10 · Memoria, Paginación y Servicios",
+            "cards": [
+                {
+                    "name": "Core: MMU — nro_pagina=floor(DL/TAM_PAGINA), offset=DL%TAM_PAGINA; dividir rangos multi-página",
+                    "idLabels": ["lab_core"],
+                    "customFieldItems": [
+                        { "value": { "date": "2026-10-31T03:00:00.000Z" }, "idValue": null, "idCustomField": "cf_fecha" }
+                    ]
+                },
+                {
+                    "name": "Core: page fault — devolver Job sin actualizar PC; traducir TODO antes de modificar memoria/registros",
+                    "idLabels": ["lab_core"],
+                    "customFieldItems": [
+                        { "value": { "date": "2026-10-31T03:00:00.000Z" }, "idValue": null, "idCustomField": "cf_fecha" }
+                    ]
+                },
+                {
+                    "name": "Core: page locking por instrucción + syscalls de memoria con direcciones físicas ya traducidas",
+                    "idLabels": ["lab_core"],
+                    "customFieldItems": [
+                        { "value": { "date": "2026-10-31T03:00:00.000Z" }, "idValue": null, "idCustomField": "cf_fecha" }
+                    ]
+                },
+                {
+                    "name": "Placa: memoria de usuario — void* contiguo (TAM_MEMORIA), TAM_PAGINA por config, RETARDO_MEMORIA",
+                    "idLabels": ["lab_placa"],
+                    "customFieldItems": [
+                        { "value": { "date": "2026-10-31T03:00:00.000Z" }, "idValue": null, "idCustomField": "cf_fecha" }
+                    ],
+                    "desc": "Hecho: RETARDO_MEMORIA se aplica antes de cada respuesta. Pendiente: void* de TAM_MEMORIA y paginación."
+                },
+                {
+                    "name": "Placa: tabla de páginas por Job (fuera de la memoria de datos) + paginación bajo demanda",
+                    "idLabels": ["lab_placa"],
+                    "customFieldItems": [
+                        { "value": { "date": "2026-10-31T03:00:00.000Z" }, "idValue": null, "idCustomField": "cf_fecha" }
+                    ]
+                },
+                {
+                    "name": "Placa: operación obtención de marco (lockea; ausente → page fault) y carga de página",
+                    "idLabels": ["lab_placa"],
+                    "customFieldItems": [
+                        { "value": { "date": "2026-10-31T03:00:00.000Z" }, "idValue": null, "idCustomField": "cf_fecha" }
+                    ]
+                },
+                {
+                    "name": "Placa: Offload — archivo single-thread (sin I/O paralela), PATH/TAM/RETARDO por config, reserva en ALLOC",
+                    "idLabels": ["lab_placa"],
+                    "customFieldItems": [
+                        { "value": { "date": "2026-10-31T03:00:00.000Z" }, "idValue": null, "idCustomField": "cf_fecha" }
+                    ]
+                },
+                {
+                    "name": "Placa: reemplazo global LRU / CLOCK-M por config — víctima no lockeada de cualquier Job del conjunto residente",
+                    "idLabels": ["lab_placa"],
+                    "customFieldItems": [
+                        { "value": { "date": "2026-10-31T03:00:00.000Z" }, "idValue": null, "idCustomField": "cf_fecha" }
+                    ]
+                },
+                {
+                    "name": "Placa: ALLOC/FREE — asignación alineada a página, responder dirección lógica; sin espacio en offload → finaliza el Job",
+                    "idLabels": ["lab_placa"],
+                    "customFieldItems": [
+                        { "value": { "date": "2026-10-31T03:00:00.000Z" }, "idValue": null, "idCustomField": "cf_fecha" }
+                    ]
+                },
+                {
+                    "name": "Placa: comandos locales stdin — INFO (memoria/offload/frames/jobs) y TLS (jobs + páginas)",
+                    "idLabels": ["lab_placa"],
+                    "customFieldItems": [
+                        { "value": { "date": "2026-10-31T03:00:00.000Z" }, "idValue": null, "idCustomField": "cf_fecha" }
+                    ]
+                },
+                {
+                    "name": "Planificador: atención de page fault — bloquear Job, pedir carga a Placa, volver a READY",
+                    "idLabels": ["lab_plan"],
+                    "customFieldItems": [
+                        { "value": { "date": "2026-10-31T03:00:00.000Z" }, "idValue": null, "idCustomField": "cf_fecha" }
+                    ]
+                },
+                {
+                    "name": "Planificador: servicios Loader (LOAD_BATCH + RETARDO_LOADER), Labeler (LABEL por teclado), Logger (REPORT hex ASCII)",
+                    "idLabels": ["lab_plan"],
+                    "customFieldItems": [
+                        { "value": { "date": "2026-10-31T03:00:00.000Z" }, "idValue": null, "idCustomField": "cf_fecha" }
+                    ]
+                },
+                {
+                    "name": "Planificador: colas FIFO por servicio (una petición por vez) + deslockeo de páginas al finalizar cada una",
+                    "idLabels": ["lab_plan"],
+                    "customFieldItems": [
+                        { "value": { "date": "2026-10-31T03:00:00.000Z" }, "idValue": null, "idCustomField": "cf_fecha" }
+                    ]
+                },
+                {
+                    "name": "Core: instrucciones de entrenamiento — FORWARD, BACKWARD, UPDATE (cargar E consumidos, escribir E modificados)",
+                    "idLabels": ["lab_core"],
+                    "customFieldItems": [
+                        { "value": { "date": "2026-10-31T03:00:00.000Z" }, "idValue": null, "idCustomField": "cf_fecha" }
+                    ]
+                },
+                {
+                    "name": "Storage: formateo del volumen al iniciar (superbloque + FAT + directorio) y comandos INFO/LS",
+                    "idLabels": ["lab_storage"],
+                    "customFieldItems": [
+                        { "value": { "date": "2026-10-31T03:00:00.000Z" }, "idValue": null, "idCustomField": "cf_fecha" }
+                    ]
+                },
+                {
+                    "name": "Ensayo del check: Mini Entrenamiento (ALLOC + LOAD_BATCH + FORWARD/BACKWARD/UPDATE) forzando page faults y BLOCKED",
+                    "idLabels": ["lab_testing"],
+                    "customFieldItems": [
+                        { "value": { "date": "2026-10-31T03:00:00.000Z" }, "idValue": null, "idCustomField": "cf_fecha" }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "Check 4 · 14/11 · Storage, Filesystem y Persistencia",
+            "cards": [
+                {
+                    "name": "Storage: superbloque FAT32_TRAIN — firma 11B, TAM_BLOQUE, CANT_BLOQUES, BLOQUES_DIRECTORIO + padding",
+                    "idLabels": ["lab_storage"],
+                    "customFieldItems": [
+                        { "value": { "date": "2026-11-14T03:00:00.000Z" }, "idValue": null, "idCustomField": "cf_fecha" }
+                    ]
+                },
+                {
+                    "name": "Storage: FAT — uint32_t por bloque, 28 bits útiles; 0 libre, 0x0FFFFFFF fin, 0x0FFFFFFE reservado",
+                    "idLabels": ["lab_storage"],
+                    "customFieldItems": [
+                        { "value": { "date": "2026-11-14T03:00:00.000Z" }, "idValue": null, "idCustomField": "cf_fecha" }
+                    ]
+                },
+                {
+                    "name": "Storage: directorio — entrada 32B (estado 1B + nombre 23B + tamaño 4B + bloque inicial 4B); lleno → error",
+                    "idLabels": ["lab_storage"],
+                    "customFieldItems": [
+                        { "value": { "date": "2026-11-14T03:00:00.000Z" }, "idValue": null, "idCustomField": "cf_fecha" }
+                    ]
+                },
+                {
+                    "name": "Storage: guardar checkpoint — crear/reemplazar entrada, asignar y liberar bloques de la cadena",
+                    "idLabels": ["lab_storage"],
+                    "customFieldItems": [
+                        { "value": { "date": "2026-11-14T03:00:00.000Z" }, "idValue": null, "idCustomField": "cf_fecha" }
+                    ]
+                },
+                {
+                    "name": "Storage: cargar y eliminar checkpoint — liberar entrada + cadena FAT; inexistente no finaliza el Job",
+                    "idLabels": ["lab_storage"],
+                    "customFieldItems": [
+                        { "value": { "date": "2026-11-14T03:00:00.000Z" }, "idValue": null, "idCustomField": "cf_fecha" }
+                    ]
+                },
+                {
+                    "name": "Storage: journaling — asientos texto con OP_DIR/OP_FAT/OP_WRITE y marcas RECORD_STARTED/COMMITED/APPLIED",
+                    "idLabels": ["lab_storage"],
+                    "customFieldItems": [
+                        { "value": { "date": "2026-11-14T03:00:00.000Z" }, "idValue": null, "idCustomField": "cf_fecha" }
+                    ]
+                },
+                {
+                    "name": "Storage: escritura journal con fwrite+fflush+fsync (RETARDO_COMMIT antes de marcar COMMITED)",
+                    "idLabels": ["lab_storage"],
+                    "customFieldItems": [
+                        { "value": { "date": "2026-11-14T03:00:00.000Z" }, "idValue": null, "idCustomField": "cf_fecha" }
+                    ]
+                },
+                {
+                    "name": "Storage: recuperación al iniciar — descartar sin commit / con ambas marcas; re-aplicar commit sin applied (idempotente)",
+                    "idLabels": ["lab_storage"],
+                    "customFieldItems": [
+                        { "value": { "date": "2026-11-14T03:00:00.000Z" }, "idValue": null, "idCustomField": "cf_fecha" }
+                    ]
+                },
+                {
+                    "name": "Storage: comandos CAT/WRITE/RM + logs de acceso a FAT y bloques de datos",
+                    "idLabels": ["lab_storage", "lab_testing"],
+                    "customFieldItems": [
+                        { "value": { "date": "2026-11-14T03:00:00.000Z" }, "idValue": null, "idCustomField": "cf_fecha" }
+                    ]
+                },
+                {
+                    "name": "Planificador: syscalls SAVE/LOAD/DELETE_CHECKPOINT — leer/escribir memoria del Job y coordinar con Storage (bloqueantes)",
+                    "idLabels": ["lab_plan"],
+                    "customFieldItems": [
+                        { "value": { "date": "2026-11-14T03:00:00.000Z" }, "idValue": null, "idCustomField": "cf_fecha" }
+                    ]
+                },
+                {
+                    "name": "Ensayo del check: SAVE→LOAD entre scripts independientes + kill -9 al Storage y validación de recuperación",
+                    "idLabels": ["lab_testing"],
+                    "customFieldItems": [
+                        { "value": { "date": "2026-11-14T03:00:00.000Z" }, "idValue": null, "idCustomField": "cf_fecha" }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "🏁 Entregas Finales · Integración",
+            "cards": [
+                {
+                    "name": "Primera entrega — Laboratorio de Sistemas (Medrano)",
+                    "idLabels": ["lab_grupo"],
+                    "customFieldItems": [
+                        { "value": { "date": "2026-11-28T03:00:00.000Z" }, "idValue": null, "idCustomField": "cf_fecha" }
+                    ]
+                },
+                {
+                    "name": "Segunda entrega",
+                    "idLabels": ["lab_grupo"],
+                    "customFieldItems": [
+                        { "value": { "date": "2026-12-12T03:00:00.000Z" }, "idValue": null, "idCustomField": "cf_fecha" }
+                    ]
+                },
+                {
+                    "name": "Tercera entrega",
+                    "idLabels": ["lab_grupo"],
+                    "customFieldItems": [
+                        { "value": { "date": "2026-12-19T03:00:00.000Z" }, "idValue": null, "idCustomField": "cf_fecha" }
+                    ]
+                },
+                {
+                    "name": "Planificador: estadísticas por Job — ejecución, espera, ingreso, memoria pico, syscalls, page faults, READY⇒EXEC",
+                    "idLabels": ["lab_plan"],
+                    "desc": "Hecho: tiempo total, espera en READY, ingreso (NEW), syscalls y transiciones READY⇒EXEC. Pendiente: memoria pico y page faults (Check 3)."
+                },
+                {
+                    "name": "Planificador: desconexión de Core — Job vuelve a READY y deslockeo de sus páginas",
+                    "idLabels": ["lab_plan", "lab_core"],
+                    "desc": "Hecho: el Job vuelve a READY. Pendiente: deslockeo de páginas en la Placa (Check 3)."
+                },
+                {
+                    "name": "Planificador: finalización de Job — liberar marcos, offload y estructuras en TODO el sistema",
+                    "idLabels": ["lab_plan", "lab_placa", "lab_storage"]
+                },
+                {
+                    "name": "Correr las pruebas oficiales de la cátedra (se publican cerca de la entrega final) en entorno distribuido",
+                    "idLabels": ["lab_testing"]
+                },
+                {
+                    "name": "Probar con distribución de procesos variable: varios Cores, máquinas distintas, reconexiones en caliente",
+                    "idLabels": ["lab_testing", "lab_infra"]
+                },
+                {
+                    "name": "Auditoría de logs mínimos obligatorios de los 4 módulos (formato exacto del enunciado, INFO a archivo)",
+                    "idLabels": ["lab_testing"]
+                },
+                {
+                    "name": "Preparar coloquio individual: relacionar cada decisión de implementación con la teoría (no recuperable)",
+                    "idLabels": ["lab_grupo"]
+                }
+            ]
+        },
+        {
+            "name": "✅ Hecho",
+            "cards": []
+        }
+    ]
+}

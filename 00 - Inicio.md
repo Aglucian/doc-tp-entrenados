@@ -15,6 +15,7 @@ Esta es la documentación de trabajo del TP **EntrenadOS** (grupo *RequiemSO*). 
 - [[Plan de acción]]: qué falta, en qué orden y para qué checkpoint
 - [[Estado de ramas]]: qué tiene cada rama y cómo integrarlas
 - [[Bugs encontrados]]: los bugs de cada rama, qué problema causaban y cuándo se corrigieron
+- [[Uso de deploy]]: las herramientas de prueba por SSH (`deploy/`), que desde el 28/11 viven en `Repo TP/deploy/` y no en el TP
 - [[Despliegue distribuido]]: servidores de prueba y `deploy/desplegar.sh` (cómo correr pruebas en varias máquinas)
 - [[Deploy manual - Guía de laboratorio]]: **guía para el día de la entrega** (también en PDF: `TP EntrenadOS - Deploy manual.pdf`, A4 vertical, se genera con `herramientas/nota_pdf.py`)
 - [[Pruebas finales 2026-11-28]]: **informe** de las 6 pruebas finales con la rama `deploy` (10 corridas, todas ✅)

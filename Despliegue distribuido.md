@@ -11,6 +11,9 @@ Volver a [[00 - Inicio]] · Ver [[Plan de acción]] · Pruebas: [[Mini Entrenami
 
 El enunciado dice que la cantidad de computadoras y la distribución de los procesos "será definida en cada uno de los tests" y que puede cambiar en la evaluación. **Automatizar el despliegue es responsabilidad del grupo.** Para eso está `deploy/desplegar.sh`, en el repo del TP (commit `18d367d`, en `develop` desde el PR #20).
 
+> [!info] Dónde está `deploy/`
+> Desde el 28/11, `deploy/` no está en el repo del TP: se movió a este vault, en `Repo TP/deploy/`. Para usar las herramientas de esta nota hay que copiarlo de vuelta dentro del TP (ver [[Uso de deploy]]).
+
 ## Entrega: modo manual en cada VM (rama `deploy`)
 
 > [!important] Así se va a correr en el laboratorio

@@ -19,7 +19,7 @@ Volver a [[00 - Inicio]] · Ver también [[Estado de ramas]], [[Protocolo]]
 >
 > **Lo que falta:** practicar el resto de las pruebas en modo manual, commitear el log del page fault, y llevar `deploy` a `develop` y a `main`.
 
-Roles (de `doc/distribucion-equipo.md`):
+Roles (de [[distribucion-equipo]], en `Repo TP/doc/`):
 - **D1**: Planificador, planificación
 - **D2**: Planificador, syscalls y servicios
 - **D3**: Placa
@@ -37,7 +37,7 @@ Responsable: todos / D5
 - [x] `make` en los 5 módulos sin warnings (14/11)
 - [x] PR `planificador` → `develop` (#15, mergeado el 30/10)
 - [x] Repetir la prueba del Check 2 para descartar regresiones (la suite de la cátedra del CP2 pasa, con los retardos reales también)
-- [ ] Actualizar la tabla §5.1 de `doc/planificador.md` con los payloads reales (ver [[Protocolo#Payloads Core → Planificador]])
+- [x] Actualizar la tabla §5.1 de [[Repo TP/doc/planificador|doc/planificador.md]] con los payloads reales (`6aaca09`, ver [[Protocolo#Payloads Core → Planificador]])
 
 ## Fase B: Planificador, page fault y BLOCKED (Check 3) ✅
 Responsable: D1 · Commits `0871672`, `169c8a8`

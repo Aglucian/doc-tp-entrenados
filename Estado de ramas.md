@@ -39,5 +39,8 @@ No hay PRs abiertos. Ninguna rama tiene commits que no estén en `develop`.
 6. ~~Mini Entrenamiento con los módulos reales~~ ✅ ([[Mini Entrenamiento 2026-11-14]])
 
 ## Discrepancias detectadas
-- En `doc/planificador.md` §5.1 del repo, la tabla dice que `OP_CREAR_JOB` no tiene respuesta y que `OP_DEVOLUCION` es `{motivo, jid, …}`. El código real usa `OP_RSP_CREAR_JOB {ok}` y `{jid, motivo, …}`. Hay que actualizar esa tabla (ver [[Protocolo]]).
-- Esa misma sección dice que HRRN "todavía no está implementado", pero ya está (commit `85b58ff`).
+- ~~En `doc/planificador.md` §5.1 del repo, la tabla dice que `OP_CREAR_JOB` no tiene respuesta y que `OP_DEVOLUCION` es `{motivo, jid, …}`. El código real usa `OP_RSP_CREAR_JOB {ok}` y `{jid, motivo, …}`. Hay que actualizar esa tabla (ver [[Protocolo]]).~~ Corregido en `6aaca09`.
+- ~~Esa misma sección dice que HRRN "todavía no está implementado", pero ya está (commit `85b58ff`).~~ Corregido en `6aaca09`.
+
+> [!info] `doc/` ya no está en el repo del TP
+> El 28/11 se sacó la carpeta `doc/` del repo del TP (no la usaba nada) y se movió a este vault, en `Repo TP/doc/`.

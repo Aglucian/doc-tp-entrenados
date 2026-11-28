@@ -39,6 +39,7 @@ NOTAS = [
     ("Estado de ramas.md", "Planificación"),
     ("Bugs encontrados.md", "Planificación"),
     ("Despliegue distribuido.md", "Planificación"),
+    ("Repo TP/Uso de deploy.md", "Planificación"),
     ("Deploy manual - Guía de laboratorio.md", "Planificación"),
     ("Módulos/Planificador - Resumen.md", "Módulos"),
     ("Módulos/Planificador.md", "Módulos"),

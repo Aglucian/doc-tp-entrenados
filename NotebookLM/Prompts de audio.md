@@ -20,7 +20,7 @@ Diez audios (*Audio Overview*) para estudiar el TP y preparar el coloquio. Cada 
 
 | Id | Archivo | Dónde está |
 | --- | --- | --- |
-| **ENUNCIADO** | `TP 2C2026 - EntrenadOS.md` | repo del TP, carpeta `doc/` |
+| **ENUNCIADO** | `Repo TP/doc/TP 2C2026 - EntrenadOS.md` | este vault |
 | **PRESENTACION** | `TP EntrenadOS - Presentación.pdf` | raíz de este vault |
 | **INICIO** | `00 - Inicio.md` | raíz de este vault |
 | **PROTOCOLO** | `Módulos/Protocolo.md` | este vault |
