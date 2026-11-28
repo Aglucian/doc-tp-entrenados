@@ -417,28 +417,22 @@ hilo de cierre: sigwait() → log "Se recibió SIGINT: el módulo finaliza"
 
 ## 8 · Deploy: preparar las máquinas
 
-En **cada** servidor (una sola vez):
+Cada módulo se levanta **a mano en su VM** (rama `deploy`). En cada VM, una sola vez:
 
 ```bash
-sudo apt install -y tmux rsync
-git clone https://github.com/sisoputnfrba/so-commons-library
-cd so-commons-library && sudo make install && cd ..
-git clone https://github.com/sisoputnfrba/entrenados-pruebas ~/entrenados-pruebas
-git clone git@github.com:sisoputnfrba/tp-2026-2c-requiemso.git   # solo para --preparar
+git clone https://github.com/sisoputnfrba/tp-2026-2c-requiemso.git   # en la contraseña va el token
+git clone https://github.com/sisoputnfrba/entrenados-pruebas
+cd ~/tp-2026-2c-requiemso && git switch deploy && git pull && ./preparar.sh
 ```
 
-En la **máquina de control** (desde donde se lanzan las pruebas):
+`preparar.sh` (las commons ya están instaladas):
+1. `MÓDULOS :` qué corre en esa VM (uno, varios o `todos`)
+2. `IP PLANIFICADOR :` · `IP PLACA :` · `IP STORAGE :` → las escribe en las configs del TP
+3. Limpia y recompila esos módulos
+4. Crea `bin/<módulo>` para usar tal cual los comandos del README de cada prueba
 
-```bash
-git clone git@github.com:sisoputnfrba/tp-2026-2c-requiemso.git && cd tp-2026-2c-requiemso
-git checkout develop
-git clone https://github.com/sisoputnfrba/entrenados-pruebas ~/entrenados-pruebas
-ssh-keygen -t ed25519            # si no hay clave
-ssh-copy-id utnso@192.168.1.25   # repetir para cada servidor (pide la contraseña una vez)
-```
-
-- `--preparar` hace `git fetch` en el clon de cada servidor y compila en `~/tp-run/src` (un worktree en `origin/develop`)
-- Si los servidores no tienen acceso al repo privado: `--preparar-local` copia este checkout con `rsync` y compila allá
+- `git switch` y no `git checkout`: en el repo hay una **carpeta** `deploy/` con el mismo nombre que la rama
+- Volver a correrlo pide todo de nuevo y recompila
 
 ---
 
@@ -446,84 +440,62 @@ ssh-copy-id utnso@192.168.1.25   # repetir para cada servidor (pide la contrase�
 
 <!-- dibujo: servidores -->
 ```
-192.168.1.25 Placa · .26 Storage · .27 Planificador · .28 Core 1 (y 3) · .29 Core 2 (y 4)
+.31 Planificador · .18 Placa · .26 Storage · .25 Core 1 (práctica del 27/11)
 ```
 
-| Archivo | Qué define |
-| --- | --- |
-| `deploy/servidores.conf` | Usuario SSH (`utnso`), clon del repo en cada servidor, `~/tp-run` como base, `REF=origin/develop`, lista de servidores |
-| `deploy/catedra.conf` | Reparto: `PLACA`, `STORAGE`, `PLANIFICADOR`, `CORES_HOSTS` (core-1 al primero, core-2 al segundo, y se repite) |
-| `deploy/catedra_entradas.conf` | Respuestas al Labeler y comandos de consola que piden las pruebas |
+- Funciona con **1 a 5 máquinas**: en una sola, `MÓDULOS : todos` y las tres IPs iguales
+- **Cores:** se pueden agregar o cortar en cualquier momento, cada uno con un **ID distinto**. Un ID repetido se rechaza. El Core N usa cualquier `core-K.config` con otro ID: `bin/core core-1.config 5`
+- Configs de la cátedra, **a mano**:
 
-- Las configs de la cátedra se usan **tal cual**: solo se cambia `127.0.0.1` por la IP de cada servidor y las rutas relativas por absolutas
-- Cada módulo corre en una sesión de **tmux** del servidor: `tp-placa`, `tp-storage`, `tp-planificador`, `tp-core-<id>`
+| Config | Claves |
+| --- | --- |
+| `planificador.config` | `IP_PLACA`, `IP_STORAGE` |
+| `core-N.config` | `IP_PLANIFICADOR`, `IP_PLACA` |
+| `placa.config`, `storage.config` | ninguna (solo escuchan) |
 
 ---
 
 ## 8 · Deploy: las 6 pruebas finales
 
-```bash
-deploy/catedra.sh entregas_finales 01_planificacion/FIFO --preparar   # la primera vez del día
-```
+En **todas** las VMs: `cd ~/entrenados-pruebas/entregas_finales`. Después, los comandos de `escenarios/<prueba>/README.md`, cambiando `/ruta/al/tp` por `~/tp-2026-2c-requiemso`.
 
-| Prueba | Cómo se corre | Qué se verifica |
+| Prueba | Variantes | Qué se verifica |
 | --- | --- | --- |
-| 01 Planificación | `deploy/catedra.sh entregas_finales 01_planificacion/FIFO` (y `/RR`, `/HRRN`) | Orden de ejecución, desalojos por quantum, estimaciones HRRN |
-| 02 Memoria | `deploy/catedra.sh entregas_finales 02_memoria/LRU` (y `/CLOCK-M`) | Víctimas, bajadas al Offload solo de las modificadas, reportes iguales |
-| 03 Servicios | `deploy/catedra.sh entregas_finales 03_servicios` | Reportes = lote + texto del Labeler; Loader concurrente con el Labeler esperando |
-| 04 Storage | `deploy/pruebas/finales/04_storage.sh` | Directorio lleno / falta de espacio, reutilización de bloques, `LS` tras reiniciar |
-| 05 Journal | `deploy/pruebas/finales/05_journal.sh` | `kill -9` antes del COMMIT (descarta) y entre COMMIT y APPLIED (re-aplica) |
-| 06 Estabilidad | `deploy/pruebas/finales/06_estabilidad.sh` | Cores que entran y salen durante la corrida; 13/13 Jobs en `EXIT` |
+| 01 Planificación | FIFO · RR · HRRN | Orden de ejecución, desalojos por quantum, estimaciones HRRN |
+| 02 Memoria | LRU · CLOCK-M | Víctimas, bajadas al Offload solo de las modificadas |
+| 03 Servicios | — | Reportes = lote + texto del Labeler (se tipea en la terminal del Planificador) |
+| 04 Storage | checkpoints · fs_lleno | Directorio lleno / falta de espacio, `LS` tras reiniciar |
+| 05 Journal | A · B | `kill -9` antes del COMMIT (descarta) y entre COMMIT y APPLIED (re-aplica) |
+| 06 Estabilidad | — | Cores que entran y salen; todos los Jobs en `EXIT` |
 
-- Las respuestas al Labeler y los comandos de consola salen solos de `catedra_entradas.conf`
-- `deploy/pruebas/finales/verificar_recursos.sh`: la 06 bajo valgrind + CPU en reposo (sin esperas activas)
-
----
-
-## 8 · Deploy: cambiar el reparto en el momento
-
-Las variables de `catedra.conf` se pisan desde el entorno, **sin editar nada**:
-
-```bash
-# todo en una sola máquina
-PLACA=192.168.1.25 STORAGE=192.168.1.25 PLANIFICADOR=192.168.1.25 CORES_HOSTS="192.168.1.25" \
-  deploy/catedra.sh entregas_finales 06_estabilidad
-
-# los Cores repartidos en tres máquinas
-CORES_HOSTS="192.168.1.27 192.168.1.28 192.168.1.29" deploy/catedra.sh entregas_finales 02_memoria/LRU
-```
-
-- Si en el servidor elegido falta el binario de un módulo, `catedra.sh` lo **compila** antes de lanzarlo
-- `--cores "1 2"`: qué Cores arrancan al principio; los otros se levantan después (`--accion levantar core-3`)
-- El reparto que pide cada prueba se respeta cambiando estas variables
+**Orden:** Storage → Placa → Planificador → Cores, esperando que cada servidor escuche.
 
 ---
 
-## 8 · Deploy: checklist del día (< 10 minutos)
+## 8 · Deploy: checklist del día
 
-1. **IPs**: anotar las de las VMs del laboratorio y ponerlas en `deploy/catedra.conf` y `SERVIDORES` de `servidores.conf`
-2. **Claves SSH**: `ssh-copy-id utnso@<ip>` en cada una y probar `ssh -o BatchMode=yes utnso@<ip> true`
-3. **Código**: `git pull` en la máquina de control (rama `develop`)
-4. **Compilar**: `deploy/catedra.sh entregas_finales 01_planificacion/FIFO --preparar` (o `--preparar-local`): despliega, compila y ya corre la primera prueba
-5. **Prueba rápida**: si la 01 FIFO termina con los Jobs en `EXIT` y la verificación OK (unos 2 minutos), el entorno está listo
-6. **Logs**:
-   - en cada servidor: `~/tp-run/catedra/<suite>/<escenario>/` (y en vivo: `ssh -t utnso@<ip> tmux attach -t tp-planificador`)
-   - en la máquina de control: `deploy/resultados/catedra-<suite>-<escenario>-<fecha>/`, con todos los logs y reportes juntos
+1. Anotar la IP de cada VM (`hostname -I`) y decidir el reparto
+2. En cada VM: `git switch deploy && git pull && ./preparar.sh`
+3. Editar a mano las IPs en las configs de la prueba (Planificador y Cores)
+4. `cd ~/entrenados-pruebas/entregas_finales` en **todas** las terminales
+5. **`mkdir -p ./runtime/<prueba>` en cada máquina** (Placa: Offload · Storage: volumen · Planificador: reportes)
+6. Lanzar en orden y mirar los logs: `placa.log`, `planificador.log`, `storage.log` y `core_N.log` quedan en `entregas_finales/`
+7. Entre pruebas: Ctrl-C (Cores primero) y no correr dos escenarios a la vez
+
+Práctica del 27/11: la 01 FIFO pasó en 4 máquinas con estos pasos.
 
 ---
 
-## 8 · Deploy: si se cae una VM
+## 8 · Deploy: si algo falla
 
-1. **Cortar lo que quedó**: `deploy/catedra.sh entregas_finales <escenario> --accion detener`
-2. **Ver qué responde**: `ssh -o ConnectTimeout=3 utnso@<ip> true` en cada servidor
-3. **Mover el módulo** a otra VM con las variables de entorno (por ejemplo `STORAGE=192.168.1.27`) y volver a correr el escenario: si falta el binario, se compila solo
-4. **Cuando la VM vuelve**: `tmux ls` para ver si quedaron sesiones viejas, y `--preparar` de nuevo si se reinstaló
-
-| Qué se cayó | Qué pasa en el TP |
-| --- | --- |
-| Un **Core** | El Planificador deslockea las páginas del Job y lo vuelve a READY; los otros Cores siguen |
-| El **Storage** | Cada checkpoint pedido desde ese momento finaliza su Job con `ERROR_STORAGE` (el Planificador no se reconecta): hay que repetir el escenario. Al volver, el journal recupera el volumen |
-| La **Placa** o el **Planificador** | Se corta la prueba: hay que repetir el escenario completo |
+| Síntoma | Causa | Qué hacer |
+| --- | --- | --- |
+| `No se pudo abrir el archivo de configuración` | Se lanzó fuera de `entregas_finales` | `cd ~/entrenados-pruebas/entregas_finales` |
+| La Placa no arranca, o el Job 0 no se crea | Falta `./runtime/<prueba>/` en esa máquina | `mkdir -p ./runtime/<prueba>` |
+| El Planificador no conecta | IP de la Placa o del Storage mal en su config, o el servidor no está levantado | Revisar la config y el orden de arranque |
+| Se cae un **Core** | — | El Job vuelve a READY y sigue en otro Core; se puede relanzar con el mismo ID |
+| Se cae el **Storage** | El Planificador no se reconecta | Ctrl-C en todo y repetir la prueba desde el Storage |
+| Se cae la **Placa**, el **Planificador** o una VM | — | Mover el módulo a otra VM (`./preparar.sh` con ese módulo) y repetir la prueba |
 
 ---
 

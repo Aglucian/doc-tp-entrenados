@@ -16,6 +16,7 @@ Esta es la documentación de trabajo del TP **EntrenadOS** (grupo *RequiemSO*). 
 - [[Estado de ramas]]: qué tiene cada rama y cómo integrarlas
 - [[Bugs encontrados]]: los bugs de cada rama, qué problema causaban y cuándo se corrigieron
 - [[Despliegue distribuido]]: servidores de prueba y `deploy/desplegar.sh` (cómo correr pruebas en varias máquinas)
+- [[Laboratorio manual 2026-11-27]]: práctica de la entrega en modo manual (cada módulo en su VM con `preparar.sh`): 01 FIFO en 4 máquinas ✅
 - [[Pruebas finales 2026-11-24]]: las 6 pruebas oficiales de las entregas finales en los 5 servidores ✅
 - [[Check 4 2026-11-14]]: checkpoints y journaling, con `kill -9` al Storage en los 5 servidores ✅
 - [[Suite cátedra 2026-11-14]]: los escenarios oficiales de CP2 y CP3 (`entrenados-pruebas`) en los 5 servidores ✅
@@ -25,7 +26,7 @@ Esta es la documentación de trabajo del TP **EntrenadOS** (grupo *RequiemSO*). 
 ## Módulos
 | Módulo | Nota | Rol |
 | --- | --- | --- |
-| Planificador | [[Planificador]] | Colas de Jobs, corto/largo plazo, syscalls, servicios |
+| Planificador | [[Planificador]] · [[Planificador - Resumen\|Resumen]] | Colas de Jobs, corto/largo plazo, syscalls, servicios |
 | Core | [[Core]] | Ciclo de instrucción, MMU, pedido de syscalls |
 | Placa | [[Placa]] | Instrucciones, memoria paginada, offload, reemplazo |
 | Storage | [[Storage]] | FS `FAT32_TRAIN`, checkpoints, consola |

@@ -1,6 +1,6 @@
 ---
 tags: [tp-so, entrenados, plan]
-actualizado: 2026-11-24
+actualizado: 2026-11-28
 proximo_hito: Entrega 1 (28/11)
 ---
 
@@ -15,7 +15,9 @@ Volver a [[00 - Inicio]] · Ver también [[Estado de ramas]], [[Protocolo]]
 >
 > - **Sin esperas activas ni memory leaks** (prueba 06): verificado con valgrind en los 4 módulos y midiendo la CPU.
 >
-> **Lo que falta antes del 28/11:** practicar el armado en menos de 10 minutos y el PR `develop` → `main` cuando esté todo.
+> - **Entrega en modo manual** desde la rama `deploy` con `./preparar.sh`: la 01 FIFO pasó en 4 máquinas ([[Laboratorio manual 2026-11-27]]).
+>
+> **Lo que falta:** practicar el resto de las pruebas en modo manual, commitear el log del page fault, y llevar `deploy` a `develop` y a `main`.
 
 Roles (de `doc/distribucion-equipo.md`):
 - **D1**: Planificador, planificación
@@ -119,7 +121,9 @@ Probado en los 5 servidores con `kill -9` al Storage → [[Check 4 2026-11-14]]
 - [ ] PR `develop` → `main` cuando esté todo terminado (se trabaja sobre `develop`)
 - [x] Pruebas finales de la cátedra: las 6 pasan → [[Pruebas finales 2026-11-24]]
 - [x] Verificar "sin esperas activas ni memory leaks" (valgrind + CPU) en la prueba 06 (`f5fb0f0`)
-- [ ] Practicar el armado en el laboratorio en menos de 10 minutos
+- [ ] Practicar el armado en el laboratorio en menos de 10 minutos (en curso: 01 FIFO OK en modo manual, ver [[Laboratorio manual 2026-11-27]])
+- [x] Script `preparar.sh` para el modo manual (`3c402dc`, rama `deploy`)
+- [x] Rechazar Cores con un ID ya conectado (`d7dcf74`, rama `deploy`)
 - [x] **[Storage, D4]** Manejar SIGINT/SIGTERM sin loguear errores al apagarse (`2a9b3b3`)
 - [ ] Cada integrante debe poder explicar cualquier módulo en el coloquio
 

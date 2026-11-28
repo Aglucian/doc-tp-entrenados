@@ -11,6 +11,30 @@ Volver a [[00 - Inicio]] · Ver [[Plan de acción]] · Pruebas: [[Mini Entrenami
 
 El enunciado dice que la cantidad de computadoras y la distribución de los procesos "será definida en cada uno de los tests" y que puede cambiar en la evaluación. **Automatizar el despliegue es responsabilidad del grupo.** Para eso está `deploy/desplegar.sh`, en el repo del TP (commit `18d367d`, en `develop` desde el PR #20).
 
+## Entrega: modo manual en cada VM (rama `deploy`)
+
+> [!important] Así se va a correr en el laboratorio
+> Cada módulo se levanta **a mano en su VM**, sin SSH entre máquinas. Las herramientas por SSH de esta nota (`desplegar.sh`, `catedra.sh`) quedan para nuestras pruebas. Práctica completa en [[Laboratorio manual 2026-11-27]].
+
+En cada VM: clonar el TP (con el token), `so-commons-library` (instalada) y `entrenados-pruebas`. Después:
+```bash
+cd ~/tp-2026-2c-requiemso && git switch deploy && git pull && ./preparar.sh
+```
+
+`preparar.sh`:
+1. Pregunta `MÓDULOS :` qué corre en esa VM (uno o varios, o `todos`).
+2. Pide `IP PLANIFICADOR :`, `IP PLACA :` e `IP STORAGE :` (solo la IP, sin valor por defecto) y las escribe en las configs del TP.
+3. Limpia y recompila esos módulos.
+4. Crea accesos en `bin/` para usar los comandos del README de cada prueba (`/ruta/al/tp/bin/...`).
+
+Las configs de `entrenados-pruebas` se editan **a mano**: en el Planificador, `IP_PLACA` e `IP_STORAGE`; en cada Core, `IP_PLANIFICADOR` e `IP_PLACA`.
+
+Reglas que salieron de la práctica:
+- **Todo se lanza desde `~/entrenados-pruebas/entregas_finales`**: las rutas de las configs son relativas a esa carpeta.
+- **`./runtime/<prueba>/` se crea en cada máquina** que lo use: Placa (Offload), Storage (volumen) y Planificador (reportes).
+- **Orden:** Storage y Placa → Planificador → Cores. Los Cores pueden entrar y salir en cualquier momento, cada uno con un **ID distinto**. Para el Core N se usa cualquier `core-K.config` con otro ID.
+- Funciona con 1 a 5 máquinas: en una sola, `MÓDULOS : todos` y las tres IPs iguales.
+
 ## Servidores de prueba
 | IP | Uso habitual | Sistema |
 | --- | --- | --- |

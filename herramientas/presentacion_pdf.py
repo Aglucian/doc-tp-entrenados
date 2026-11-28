@@ -385,25 +385,23 @@ def d_cierre():
 
 
 def d_servidores():
-    d = Drawing(860, 230)
-    caja(d, 10, 80, 220, 90, ["Máquina de control", "deploy/catedra.sh", "deploy/resultados/", "(logs y reportes juntos)"], "neutro", 11)
-    servidores = [(".25", "Placa", "tp-placa", "placa"), (".26", "Storage", "tp-storage", "storage"),
-                  (".27", "Planificador", "tp-planificador", "planificador"), (".28", "Core 1 (y 3)", "tp-core-1", "core"),
-                  (".29", "Core 2 (y 4)", "tp-core-2", "core")]
-    y = 186
-    for ip, mod, sesion, m in servidores:
-        caja(d, 430, y, 250, 38, [f"192.168.1{ip} · {mod}", f"tmux: {sesion} · ~/tp-run/"], m, 10)
-        flecha(d, 230, 125, 430, y + 19, color="#546E7A", ancho=1, punta=6)
-        y -= 45
-    texto(d, 250, 205, "ssh (clave pública, sin contraseña)", 9, "Sans-B", color=AZUL)
-    texto(d, 700, 170, "Reparto: deploy/catedra.conf", 10, "Sans-B")
-    texto(d, 700, 154, "PLACA · STORAGE · PLANIFICADOR", 9, "Mono")
-    texto(d, 700, 140, "CORES_HOSTS", 9, "Mono")
-    texto(d, 700, 116, "Se pisa desde el entorno:", 10, "Sans-B")
-    texto(d, 700, 100, "STORAGE=192.168.1.27 \\", 9, "Mono")
-    texto(d, 700, 86, "  deploy/catedra.sh …", 9, "Mono")
+    d = Drawing(860, 270)
+    vms = [
+        (320, 170, ["192.168.1.31", "Planificador :8080", "./preparar.sh → planificador"], "planificador"),
+        (40, 40, ["192.168.1.18", "Placa :8081", "./preparar.sh → placa"], "placa"),
+        (600, 170, ["192.168.1.26", "Storage :8082", "./preparar.sh → storage"], "storage"),
+        (600, 40, ["192.168.1.25", "Core 1 (y N con otro ID)", "./preparar.sh → core"], "core"),
+    ]
+    for x, y, lineas, m in vms:
+        caja(d, x, y, 220, 62, lineas, m, 11)
+    # flechas cliente → servidor, con la clave de config que apunta al servidor
+    flecha(d, 400, 170, 150, 102, etiqueta="IP_PLACA", dx=-6, dy=4)
+    flecha(d, 540, 201, 600, 201, etiqueta="IP_STORAGE", dy=6)
+    flecha(d, 650, 102, 480, 170, etiqueta="IP_PLANIFICADOR", dx=34, dy=-12)
+    flecha(d, 600, 71, 260, 71, etiqueta="IP_PLACA", dy=6)
+    texto(d, 40, 252, "Cada VM corre sus módulos a mano, desde entrenados-pruebas/entregas_finales", 10, "Sans-B", color=AZUL)
+    texto(d, 40, 12, "La flecha va del cliente al servidor: su etiqueta es la IP que se edita en la config del cliente.", 9, color=GRIS)
     return d
-
 
 DIBUJOS = {
     "arquitectura": (d_arquitectura, 6.8), "trama": (d_trama, 4.4), "hilos": (d_hilos, 6.0),

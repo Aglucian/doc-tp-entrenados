@@ -1,14 +1,17 @@
 ---
 tags: [tp-so, entrenados, modulo, planificador]
 modulo: planificador
-rama: develop
+rama: develop + deploy
 responsables: [D1, D2]
-actualizado: 2026-11-14
+actualizado: 2026-11-28
 ---
 
 # Planificador
 
 Volver a [[00 - Inicio]] · Depende de [[Utils]] y [[Protocolo]] · Habla con [[Core]], [[Placa]] y [[Storage]]
+
+> [!tip] Resumen
+> Cómo funciona en su totalidad, con quién habla y cómo responde a cada evento: [[Planificador - Resumen]]. Esta nota es el detalle función por función.
 
 Administra la cola de Jobs del cluster. Se ocupa de:
 - planificar a largo plazo (NEW→READY con grado de multiprogramación) y a corto plazo (FIFO, RR, HRRN)
@@ -35,6 +38,9 @@ Todo en `develop`: Check 3 en el PR #15 y Check 4 en el PR #21. Validado con los
 | Estadísticas por Job (incluida la memoria dinámica máxima) | ✅ | |
 | Checkpoints (`SAVE`/`LOAD`/`DELETE_CHECKPOINT`) contra el Storage | ✅ | `3afe5ee` (#21) |
 | Log `Contexto final` de cada Job (para validar registros) | ✅ | `896a387` |
+| Cierre con Ctrl-C / SIGTERM (`utils/cierre`) | ✅ | `9793672` |
+| Rechazo de un Core con un ID ya conectado | ✅ en `deploy` | `d7dcf74` |
+| Log `## (<JID>) - Page Fault - Página: <P>` y sin el warning del Job inicial | ✅ en `deploy`, sin commitear al 28/11 | — |
 
 > [!success] Probado contra módulos simulados
 > Las pruebas usaron Placa, Storage y Core simulados en Python, que hablan el protocolo real:
@@ -89,6 +95,7 @@ El enunciado no los define. Estos son los que elegimos:
 | conexión entrante | `hilo_conexion_entrante` | Handshake; si es Core lo registra y entra a `atender_core` |
 | timer de quantum | `contar_quantum` | Duerme `RR_QUANTUM` ms e interrumpe si el despacho sigue vigente (detached) |
 | page fault | `resolver_page_fault` | Uno por PF (detached): pide la página a la Placa → READY o EXIT |
+| cierre | `esperar_senal_de_cierre` | Espera SIGINT/SIGTERM con `sigwait`, loguea y termina (ver [[Utils]]) |
 | Loader / Labeler / Logger | `ejecutar_servicio` | Uno por servicio: atiende su cola FIFO de a una petición |
 | Checkpoints | `ejecutar_servicio` | Igual que un servicio (cola FIFO), pero sin los logs de inicio y fin de Servicio: atiende `SAVE`/`LOAD`/`DELETE_CHECKPOINT` |
 
@@ -146,7 +153,7 @@ Es el estado global (`extern planificador`):
 | `devolver_a_ready` | `void (t_proceso*)` | Cambia a READY y encola |
 | `bloquear_proceso` | `void (t_proceso*)` | → BLOCKED (log de cambio de estado; si venía de EXEC, recalcula la estimación HRRN) |
 | `desbloquear_proceso` | `void (t_proceso*)` | BLOCKED → READY y encola |
-| `atender_page_fault` | `void (t_proceso*, uint32_t nro_pagina)` | `cantidad_page_faults++` → BLOCKED → hilo `resolver_page_fault` |
+| `atender_page_fault` | `void (t_proceso*, uint32_t nro_pagina)` | Log `## (<JID>) - Page Fault - Página: <P>` (no obligatorio) → `cantidad_page_faults++` → BLOCKED → hilo `resolver_page_fault` |
 | `finalizar_proceso` | `void (t_proceso*, const char* motivo)` | EXIT → `avisar_finalizacion_a_placa` → log de estadísticas → libera → `sem_post(multiprogramación)` |
 | `registrar_syscall` | `void (t_proceso*, t_syscall)` | `cantidad_syscalls++` y log `Solicitó syscall` |
 | `registrar_asignacion` | `void (t_proceso*, uint32_t dir, uint32_t tam)` | Agrega la reserva, suma a la memoria actual y actualiza el máximo |
@@ -225,10 +232,10 @@ Las tres devuelven `t_resultado_storage`: `STORAGE_OK`, `STORAGE_RECHAZADO` (`ok
 | `iniciar_servidor_cores` | `crear_servidor(PUERTO_ESCUCHA)` |
 | `inicializar_hilo_servidor_cores` / `esperar_hilo_servidor_cores` | Lanzan el hilo de `accept` y lo esperan con join |
 | `atender_conexiones_de_cores` *(static)* | Loop de `esperar_cliente` → hilo `hilo_conexion_entrante` |
-| `hilo_conexion_entrante` *(static)* | Recibe el handshake, loguea `## Módulo: …`, rechaza si no es Core, registra y atiende |
+| `hilo_conexion_entrante` *(static)* | Recibe el handshake, rechaza si no es Core o si su ID ya está conectado, loguea `## Módulo: …`, registra y atiende |
 | `atender_core` *(static)* | Loop `recibir_buffer`: `OP_TEST`, `OP_DEVOLUCION`, `OP_SYSCALL`; si el Core se desconecta, `eliminar_core` |
 | `manejar_test` *(static)* | Eco de la prueba de serialización del Check 1 |
-| `registrar_core` *(static)* | Alta en la lista + `sem_post(sem_cores_libres)` |
+| `registrar_core` *(static)* | Bajo `mutex_cores`: si el ID ya existe responde `HANDSHAKE_ERROR` (`ALTA_ID_REPETIDO`); si no, responde OK, da de alta y hace `sem_post(sem_cores_libres)`. Así ningún Job se despacha antes del `HANDSHAKE_OK` |
 | `eliminar_core` *(static)* | Baja. Si tenía un Job en EXEC: **deslockea sus páginas** y lo devuelve a READY |
 | `buscar_core` *(static)* | Por `id_core` |
 | `liberar_core` *(static)* | Si el Core ejecuta ese `pid`: lo marca libre, cambia `numero_despacho` y hace `sem_post(sem_cores_libres)` |

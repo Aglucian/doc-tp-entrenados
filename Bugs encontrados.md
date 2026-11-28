@@ -38,6 +38,7 @@ Registro de los bugs que aparecieron en cada rama del TP: qué fallaba, qué pro
 | 19 | `develop` (placa) | La Placa rechazaba el Job inicial con ruta absoluta | `896a387` · 14/11 | #23 |
 | 20 | `develop` | Placa, Planificador y Core morían con Ctrl-C sin loguear el cierre | `9793672` · 24/11 | pendiente (`develop` → `main`) |
 | 21 | `develop` (storage) | Los errores obligatorios del Storage no estaban en nivel INFO | `b93dfdd` · 24/11 | pendiente (`develop` → `main`) |
+| 22 | `deploy` (planificador) | Dos Cores con el mismo ID se registraban a la vez | `d7dcf74` · 27/11 | pendiente (`deploy` → `develop`) |
 
 ---
 
@@ -213,6 +214,12 @@ Ver [[Utils#`cierre.c` / `cierre.h`: Ctrl-C y SIGTERM]].
 - **Qué fallaba:** `## ERROR - Directorio lleno…` y `## ERROR - Falta de espacio en FAT…` se emitían con `log_error`.
 - **Problema:** el enunciado pide que **todos** los logs obligatorios sean `LOG_LEVEL_INFO`; si no, el TP puede considerarse no evaluable.
 - **Arreglo:** pasan a `log_info`, con el mismo texto.
+
+### 22. Cores con el mismo ID
+- **Rama:** `deploy` · `d7dcf74` (27/11), pendiente de llevar a `develop`.
+- **Qué fallaba:** el Planificador no verificaba que el ID de un Core fuera único.
+- **Problema:** con dos Cores con el mismo ID, `buscar_core(id)` encontraba siempre el primero. El despacho y la interrupción por quantum podían ir al Core equivocado, y un Job quedaba asignado a un Core que nunca lo recibía. Además, los dos escribían el mismo `core_<id>.log`.
+- **Arreglo:** el chequeo del ID, la respuesta del handshake y el alta se hacen juntos bajo `mutex_cores`. Si el ID ya está conectado, el Planificador responde `HANDSHAKE_ERROR`, loguea `Ya hay un Core conectado con el ID N: se rechaza la conexión nueva`, y el Core nuevo termina. Cuando un Core se desconecta, su ID queda libre de nuevo.
 
 ---
 

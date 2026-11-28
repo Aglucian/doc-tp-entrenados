@@ -1,6 +1,6 @@
 ---
 tags: [tp-so, entrenados, git]
-actualizado: 2026-11-24
+actualizado: 2026-11-28
 ---
 
 # Estado de ramas
@@ -11,6 +11,7 @@ Las ramas se comparan contra `origin/develop` (`6e367d1`) después de un `git fe
 
 | Rama | Adelante / atrás de `develop` | Contenido | Acción |
 | --- | --- | --- | --- |
+| `deploy` | +2 / 0 (al 28/11) | `develop` + `3c402dc` (`preparar.sh`) + `d7dcf74` (rechazo de Cores con ID repetido). En el repo local quedan sin commitear: el log del page fault en el Planificador y la baja del warning del Job inicial | **rama de la entrega** (modo manual, ver [[Despliegue distribuido]]) |
 | `develop` | — | Checks 2, 3 y 4 + #24 consola de la Placa (`INFO`/`TLS`) + `6e367d1` runner de las pruebas finales | base |
 | `main` | 0 / −3 | **#23 (develop → main, 14/11)**: tiene todo hasta `3a0e4c3`, incluido el Check 4. Le faltan #24 y el runner de las finales | mergear `develop` → `main` antes de la entrega |
 | `origin/core` | 0 / −16 | Ya está en `develop` (#19) | — |
