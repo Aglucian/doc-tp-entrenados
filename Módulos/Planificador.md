@@ -10,8 +10,8 @@ actualizado: 2026-11-28
 
 Volver a [[00 - Inicio]] · Depende de [[Utils]] y [[Protocolo]] · Habla con [[Core]], [[Placa]] y [[Storage]]
 
-> [!tip] Resumen
-> Cómo funciona en su totalidad, con quién habla y cómo responde a cada evento: [[Planificador - Resumen]]. Esta nota es el detalle función por función.
+> [!tip] Para el coloquio
+> Defensa del módulo con guion, teoría, trampas conceptuales y preguntas probables: [[Planificador - Resumen]]. Esta nota es el detalle función por función.
 
 Administra la cola de Jobs del cluster. Se ocupa de:
 - planificar a largo plazo (NEW→READY con grado de multiprogramación) y a corto plazo (FIFO, RR, HRRN)

@@ -26,7 +26,7 @@ Esta es la documentación de trabajo del TP **EntrenadOS** (grupo *RequiemSO*). 
 ## Módulos
 | Módulo | Nota | Rol |
 | --- | --- | --- |
-| Planificador | [[Planificador]] · [[Planificador - Resumen\|Resumen]] | Colas de Jobs, corto/largo plazo, syscalls, servicios |
+| Planificador | [[Planificador]] · [[Planificador - Resumen\|Defensa]] | Colas de Jobs, corto/largo plazo, syscalls, servicios |
 | Core | [[Core]] | Ciclo de instrucción, MMU, pedido de syscalls |
 | Placa | [[Placa]] | Instrucciones, memoria paginada, offload, reemplazo |
 | Storage | [[Storage]] | FS `FAT32_TRAIN`, checkpoints, consola |
@@ -35,6 +35,7 @@ Esta es la documentación de trabajo del TP **EntrenadOS** (grupo *RequiemSO*). 
 - [[Protocolo]]: opcodes, payloads y enums compartidos (`protocolo_entrenados.h`)
 
 ## Coloquio
+- [[Planificador - Resumen]]: defensa del Planificador para el coloquio (guion, teoría, trampas y preguntas probables)
 - [[Teoría vs implementación]]: cada concepto de la materia con su lugar en el TP y preguntas probables
 - [[Decisiones de diseño]]: lo que el enunciado deja al grupo, con su alternativa y justificación
 - [[Concurrencia y sincronización]]: hilos, mutex y semáforos de cada módulo

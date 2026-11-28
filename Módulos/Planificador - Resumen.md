@@ -1,260 +1,313 @@
 ---
-tags: [tp-so, entrenados, modulo, planificador, resumen]
+tags: [tp-so, entrenados, modulo, planificador, coloquio]
 modulo: planificador
 rama: deploy
 actualizado: 2026-11-28
 ---
 
-# Planificador: cómo funciona
+# Planificador: defensa para el coloquio
 
-Volver a [[00 - Inicio]] · Detalle función por función en [[Planificador]] · Mensajes en [[Protocolo]]
+Volver a [[00 - Inicio]] · Detalle función por función en [[Planificador]] · Teoría en [[Teoría vs implementación]] · Concurrencia en [[Concurrencia y sincronización]]
 
-El Planificador es el "kernel" del TP:
-- administra la cola de Jobs y decide qué Job ejecuta cada Core;
-- atiende las syscalls y los page faults;
-- corre los servicios (Loader, Labeler, Logger);
-- persiste checkpoints a través del Storage.
+> [!info] Cómo usar esta nota
+> El coloquio es individual y evalúa que **la implementación no contradiga la teoría**. Esta nota tiene:
+> 1. un **guion de 3 minutos** para presentar el módulo;
+> 2. cada tema explicado con su **por qué teórico**;
+> 3. las **trampas conceptuales** típicas;
+> 4. las **preguntas probables** con su respuesta.
+>
+> Regla de oro: ante cada pregunta, responder **qué hace el TP**, **qué concepto de la teoría es** y **por qué lo hicimos así**.
 
-No ejecuta instrucciones (eso lo hace el Core) ni guarda memoria (eso lo hace la Placa): **coordina**.
+---
 
-## 1. Arranque
+## 1. Guion de 3 minutos
 
+> El Planificador es el **kernel** del sistema. No ejecuta instrucciones (eso lo hacen los Cores, que son las CPUs) ni guarda memoria (eso lo hace la Placa): **decide** qué Job usa cada CPU y **atiende** lo que los Jobs no pueden hacer solos.
+>
+> Cada Job tiene un **PCB** (`t_proceso`): su contexto de 14 registros, su estado, su estimación de ráfaga y sus estadísticas. Los Jobs recorren el **diagrama de 5 estados**: NEW, READY, EXEC, BLOCKED y EXIT.
+>
+> Hay **dos planificadores**:
+> - **El de largo plazo** decide cuándo un Job entra al sistema, respetando el **grado de multiprogramación**.
+> - **El de corto plazo** decide qué Job de READY va a cada Core libre, con **FIFO, RR o HRRN** según la config.
+>
+> Cuando un Job necesita algo del sistema, hace una **syscall**:
+> - Las que no bloquean (`INIT_JOB`, `ALLOC`, `FREE`) se responden en el momento y el Job sigue en EXEC.
+> - Las que bloquean (`LOAD_BATCH`, `LABEL`, `REPORT` y los checkpoints) funcionan como **E/S**: el Job pasa a BLOCKED, el Core queda libre para otro, y un servicio atiende el pedido en su cola FIFO.
+>
+> Los **page faults** también bloquean: el Planificador le pide a la Placa que cargue la página y después devuelve el Job a READY para que **reintente la instrucción**.
+>
+> Todo corre en **hilos** que se comunican con **colas protegidas por mutex y semáforos**, sin espera activa. Los Cores pueden **entrar y salir en cualquier momento**: si uno se cae, su Job vuelve a READY y lo sigue otro.
+
+---
+
+## 2. Qué es y dónde está en el sistema
+
+| Módulo | Analogía | Relación con el Planificador |
+| --- | --- | --- |
+| **Planificador** | Kernel | — |
+| Core (1..N) | CPU | El Planificador es su **servidor**: le despacha Jobs, lo interrumpe y atiende sus syscalls |
+| Placa | RAM + swap | El Planificador es su **cliente**: crea y finaliza Jobs, ALLOC/FREE, carga páginas, lee y escribe datos |
+| Storage | Disco | El Planificador es su **cliente**: guarda, carga y elimina checkpoints |
+
+**Arranque:**
 ```
 ./bin/planificador <config> <script del Job inicial>
 ```
+1. Lee y valida la config.
+2. Se conecta a la Placa y al Storage. Si alguno no está, aborta: por eso arrancan antes.
+3. Abre el puerto 8080 para los Cores.
+4. Crea el Job 0. El script no lo lee el Planificador: le pasa el nombre a la Placa.
 
-1. **Config y logger.** Lee las 14 claves y valida que el algoritmo sea `FIFO`, `RR` o `HRRN`, que `GRADO_MULTIPROGRAMACION ≥ 1`, que `0 ≤ HRRN_ALFA ≤ 1` y que `ESTIMACION_INICIAL > 0`. Si falta algo, termina.
-2. **Señales.** Bloquea SIGINT y SIGTERM, y lanza el hilo de cierre (Ctrl-C).
-3. **Se conecta como cliente** a la Placa (`IP_PLACA:PUERTO_PLACA`) y al Storage (`IP_STORAGE:PUERTO_STORAGE`), con handshake. Si alguno no responde, **aborta**: por eso Placa y Storage arrancan antes.
-4. **Abre su servidor** en `PUERTO_ESCUCHA` (8080) para los Cores.
-5. **Crea el Job 0** con el script recibido. El script no lo lee el Planificador: solo le pasa el nombre a la Placa, que lo busca en su `PATH_INSTRUCCIONES`.
-6. Lanza los hilos de servicios, de largo plazo y de corto plazo.
+> [!question] ¿Por qué el Planificador es cliente de la Placa y no al revés?
+> Porque la Placa es un recurso pasivo, como la memoria: atiende pedidos y no toma decisiones. El que decide cuándo crear un Job o cargar una página es el kernel.
 
-## 2. Con quién habla
+---
 
-```mermaid
-flowchart LR
-    C["Cores (N)"] -- "devoluciones y syscalls" --> P["Planificador :8080"]
-    P -- "EJECUTAR_JOB, INTERRUPCION, RSP_SYSCALL" --> C
-    P -- "crear/finalizar Job, ALLOC/FREE, carga de página, leer/escribir, deslockeo" --> PL["Placa :8081"]
-    P -- "guardar/cargar/eliminar checkpoint" --> S["Storage :8082"]
-```
+## 3. El PCB y el diagrama de estados
 
-| Con | Rol del Planificador | Socket | Protección |
-| --- | --- | --- | --- |
-| **Placa** | Cliente | Uno solo, compartido por todos los hilos | `mutex_placa`: pedido y respuesta van juntos |
-| **Storage** | Cliente | Uno solo | `mutex_storage` |
-| **Cores** | Servidor | Uno por Core, cada uno con su hilo | `mutex_socket` de cada Core |
-
-### Qué le pide a la Placa
-| Cuándo | Pedido | Respuesta | Si falla |
-| --- | --- | --- | --- |
-| Un Job entra a READY (largo plazo) | `OP_CREAR_JOB {jid, script}` | `{ok}` | El Job finaliza con `ERROR_PLACA` |
-| Un Job finaliza | `OP_FINALIZAR_JOB {jid}` | `{ok}` | Se loguea el error |
-| `ALLOC` | `OP_ASIGNAR_ESPACIO {jid, tamaño}` | `{ok, dir_lógica}` | El Job finaliza con `OUT_OF_MEMORY` |
-| `FREE` | `OP_LIBERAR_ESPACIO {jid, dir}` | `{ok}` | Se le responde `false` al Core y el Job sigue |
-| Page fault | `OP_CARGA_PAGINA {jid, página}` | `{ok}` | El Job finaliza con `ERROR_PAGE_FAULT` |
-| Servicios y checkpoints | `OP_LEER_DATOS` / `OP_ESCRIBIR_DATOS` por tramo | `{ok[, bytes]}` | El Job finaliza con `ERROR_<SERVICIO>` |
-| Fin de un servicio, o Core caído | `OP_DESLOCKEO_PAGINAS {jid}` | `{ok}` | Se loguea el error |
-
-### Qué le pide al Storage
-| Syscall | Pedido | Respuesta | Si falla |
-| --- | --- | --- | --- |
-| `SAVE_CHECKPOINT` | `OP_GUARDAR_CHECKPOINT {nombre, bytes}` | `{ok}` | `false`: `SIN_ESPACIO_STORAGE` |
-| `LOAD_CHECKPOINT` | `OP_CARGAR_CHECKPOINT {nombre}` | `{ok, bytes}` | `false`: `CHECKPOINT_INEXISTENTE` |
-| `DELETE_CHECKPOINT` | `OP_ELIMINAR_CHECKPOINT {nombre}` | `{ok}` | `false`: **solo se informa**, el Job sigue |
-| Cualquiera, con el Storage caído | | | `ERROR_STORAGE`. No se reconecta |
-
-### Qué intercambia con cada Core
-| Sentido | Mensaje | Cuándo |
-| --- | --- | --- |
-| Core → P | `OP_HANDSHAKE {CORE, id}` | Al conectarse. Si ya hay un Core con ese ID, **se rechaza** (`HANDSHAKE_ERROR`) |
-| P → Core | `OP_EJECUTAR_JOB {jid, contexto}` | El corto plazo despacha un Job |
-| P → Core | `OP_INTERRUPCION {jid, FIN_QUANTUM}` | Vence el quantum (solo RR) |
-| Core → P | `OP_DEVOLUCION {jid, motivo, contexto[, página]}` | Fin de quantum, page fault o `EXIT` |
-| Core → P | `OP_SYSCALL {id, jid, contexto, parámetros}` | El Job pide una syscall |
-| P → Core | `OP_RSP_SYSCALL {ok, valor}` | Solo en `INIT_JOB`, `ALLOC` y `FREE` |
-
-## 3. Estados de un Job
+**`t_proceso`** es el PCB:
+- identificación y estado: JID, estado, ruta del script;
+- **contexto**: `PC`, `P0–P5`, `AX–DX` y `E1–E3`;
+- planificación: estimación de ráfaga (HRRN) y momento de entrada al estado actual;
+- estadísticas: tiempos en NEW y READY, syscalls, page faults, transiciones READY→EXEC y memoria dinámica máxima.
 
 ```mermaid
 stateDiagram-v2
     [*] --> NEW
-    NEW --> READY: hay lugar (multiprogramación) y la Placa lo creó
-    READY --> EXEC: lo elige el corto plazo
-    EXEC --> READY: fin de quantum / se cae el Core
-    EXEC --> BLOCKED: page fault / servicio / checkpoint
+    NEW --> READY: largo plazo (hay lugar y la Placa lo creó)
+    READY --> EXEC: corto plazo (lo elige el algoritmo)
+    EXEC --> READY: fin de quantum (RR) / se cae el Core
+    EXEC --> BLOCKED: page fault / syscall bloqueante
     BLOCKED --> READY: página cargada / servicio terminado
     EXEC --> EXIT: EXIT / OUT_OF_MEMORY / ERROR_SYSCALL
     BLOCKED --> EXIT: error del servicio, de la página o del Storage
     NEW --> EXIT: ERROR_PLACA
 ```
 
-Cada cambio se loguea: `## (3) Pasa del estado READY al estado EXEC`.
+**Puntos para defender:**
+- **No hay transición BLOCKED → EXEC.** Al terminar un bloqueo, el Job vuelve a READY y compite de nuevo. Es el modelo de 5 estados de la teoría.
+- **`INIT_JOB`, `ALLOC` y `FREE` no pasan por BLOCKED.** Son syscalls que se resuelven al instante y el Core espera la respuesta: el Job sigue en EXEC.
+- **El contexto se guarda siempre** apenas el Core devuelve el Job, antes de mirar el motivo. Es el **cambio de contexto**: sin eso, al volver a despacharlo se perdería dónde estaba.
 
-## 4. Planificación
+---
 
-### Largo plazo (un hilo)
-Espera un Job en NEW (`sem_new`) y un lugar libre (`sem_multiprogramacion`, que arranca en `GRADO_MULTIPROGRAMACION`). Pide a la Placa que cree el Job y lo pasa a READY. Cuando un Job finaliza, libera su lugar.
+## 4. Planificación de largo plazo
 
-### Corto plazo (un hilo)
-Espera **un Job en READY y un Core libre** (`sem_ready` y `sem_cores_libres`). Elige según el algoritmo y despacha:
+**Qué hace:** un hilo espera dos cosas: que haya un Job en NEW (`sem_new`) y que haya lugar (`sem_multiprogramacion`, inicializado en `GRADO_MULTIPROGRAMACION`). Cuando las tiene, pide a la Placa que cree las estructuras del Job y lo pasa a READY. Cuando un Job finaliza, libera su lugar (`sem_post`).
 
-| Algoritmo | Elige | Desalojo |
-| --- | --- | --- |
-| FIFO | El primero que llegó a READY | No |
-| RR | Igual que FIFO, y lanza un timer de `RR_QUANTUM` ms | Sí: al vencer, `OP_INTERRUPCION` |
-| HRRN | Mayor `(W + S) / S` | No |
+**Teoría:** es el **planificador de largo plazo**, que controla el **grado de multiprogramación**: cuántos procesos compiten a la vez por los recursos.
 
-- **HRRN:** `W` es la espera en READY y `S` la ráfaga estimada. Al salir de EXEC, `S = α · ráfaga_real + (1 − α) · S`. Se loguea `## (N) - Prioridad HRRN calculada: … - Estimación próxima ráfaga: …`.
-- **RR:** el timer guarda el ID del Core y el **número de despacho**. Si cuando vence el Job ya se fue, no interrumpe a nadie. Log: `## (N) - Desalojado por fin de quantum`.
+> [!warning] Trampa
+> El grado de multiprogramación **no limita cuántos Jobs ejecutan** (eso lo limita la cantidad de Cores). Limita cuántos Jobs están **admitidos**: los que están en READY, EXEC y BLOCKED juntos. Con grado 4 y 2 Cores puede haber 2 en EXEC, 1 en READY y 1 en BLOCKED.
 
-## 5. Cómo responde a cada evento
+---
 
-### Devolución de un Core
-Siempre guarda el contexto primero y libera el Core. Después:
+## 5. Planificación de corto plazo
 
-| Motivo | Respuesta |
-| --- | --- |
-| `FIN_QUANTUM` | Log de desalojo → READY |
-| `PAGE_FAULT` | Log `## (N) - Page Fault - Página: P` → BLOCKED → un hilo pide `OP_CARGA_PAGINA` → READY (la instrucción se reintenta) o `ERROR_PAGE_FAULT` |
-| `EXIT` | Finaliza el Job con `EXIT` |
+**Qué hace:** un hilo espera **un Job en READY y un Core libre** (`sem_ready` y `sem_cores_libres`). Elige el Job según el algoritmo y se lo manda al Core con `OP_EJECUTAR_JOB {jid, contexto}`.
 
-### Syscalls
-Todas loguean `## (N) - Solicitó syscall: <NOMBRE>` y suman a las estadísticas.
+### FIFO
+- Elige el que llegó primero a READY.
+- **No expropiativo:** el Job ejecuta hasta que se bloquea o termina.
+- **Desventaja teórica:** efecto convoy. Un Job largo hace esperar a todos los cortos.
 
-| Syscall | ¿Bloquea? | Respuesta del Planificador |
-| --- | --- | --- |
-| `INIT_JOB` | No | Crea el Job en NEW y responde `{true, jid_nuevo}`. El Job que la pidió sigue en EXEC |
-| `ALLOC` | No | OK: `{true, dir_lógica}`. Sin espacio: `{false, 0}` y finaliza el Job (`OUT_OF_MEMORY`); el Core lo abandona |
-| `FREE` | No | `{true, 0}`, o `{false, 0}` si la dirección es inválida. El Job sigue |
-| `LOAD_BATCH` · `LABEL` · `REPORT` | Sí | BLOCKED → cola del Loader, Labeler o Logger. No responde: el Core ya soltó el Job |
-| `SAVE` · `LOAD` · `DELETE_CHECKPOINT` | Sí | BLOCKED → cola de Checkpoints → Storage |
-| `EXIT` | — | Finaliza el Job |
+### Round Robin
+- FIFO + **quantum** (`RR_QUANTUM` ms). Al despachar se lanza un **timer**; si vence y el Job sigue en ese Core, se manda `OP_INTERRUPCION {jid, FIN_QUANTUM}`.
+- El Core la atiende en el **Check Interrupt** (al final de la instrucción en curso) y devuelve el Job. Va al **final** de READY: `## (N) - Desalojado por fin de quantum`.
+- **Expropiativo** por tiempo. Reparte la CPU de forma equitativa, a costa de más cambios de contexto.
+- **Detalle de implementación clave:** el timer guarda el ID del Core y un **número de despacho**, que cambia cada vez que el Core recibe o suelta un Job. Si el Job se bloqueó antes de que venza el quantum, el número ya no coincide y **no se interrumpe** al Job siguiente. Además el Core descarta una interrupción cuyo JID no es el que ejecuta: doble protección contra la **condición de carrera**.
 
-### Servicios (un hilo y una cola FIFO cada uno)
-El Core ya tradujo el rango y manda los **tramos físicos**, con las páginas lockeadas.
+### HRRN (Highest Response Ratio Next)
+- Elige el de mayor **response ratio**:
 
-| Servicio | Qué hace |
-| --- | --- |
-| Loader | Lee el archivo de `PATH_DATOS` (si es corto, completa con ceros), espera `RETARDO_LOADER` y escribe por tramos |
-| Labeler | `## (N) - Ingrese K caracteres:` → lee del teclado → escribe por tramos |
-| Logger | Lee por tramos → hexadecimal → `## (N) - <HEX>` en `PATH_REPORTES` |
-| Checkpoints | Lee o escribe por tramos y habla con el Storage |
+$$RR = (W + S) / S$$
 
-Al terminar, **siempre deslockea** (también si falló) y el Job vuelve a READY, o finaliza con `ERROR_<SERVICIO>`.
+  - **W:** cuánto lleva esperando en READY desde que entró la última vez.
+  - **S:** la ráfaga **estimada**.
+- **No expropiativo.**
+- La estimación se actualiza **cada vez que el Job sale de EXEC** (por bloqueo, page fault o fin), con la media exponencial:
 
-### Cores que entran y salen
-- **Entra un Core:** queda disponible al instante y el corto plazo empieza a usarlo. Si ya hay uno con ese ID, se rechaza.
-- **Se cae un Core:** si tenía un Job en EXEC, el Planificador **deslockea sus páginas** y lo devuelve a READY con el último contexto. Otro Core lo retoma.
-- **No queda ningún Core:** los Jobs esperan en READY hasta que se conecte uno.
+$$S(n+1) = α · R(n) + (1 − α) · S(n)$$
 
-### Fallas de los otros módulos
-| Falla | Respuesta |
-| --- | --- |
-| No conecta a la Placa o al Storage al arrancar | Aborta |
-| Se cae la Placa en ejecución | Cada pedido falla (`Se perdió la comunicación con la Placa`) y los Jobs afectados finalizan con error |
-| Se cae el Storage en ejecución | Los checkpoints finalizan su Job con `ERROR_STORAGE`; el resto sigue |
-| Ctrl-C | Loguea `Se recibió SIGINT: el módulo finaliza` y termina |
+  - **R:** lo que realmente duró la ráfaga.
+  - **α = `HRRN_ALFA`:** cuánto pesa la última ráfaga frente a la historia.
+  - `S(0) = ESTIMACION_INICIAL`.
+- Si hay empate, gana el primero de la cola (el que llegó antes).
+- En cada elección se loguea la prioridad de cada candidato: `## (N) - Prioridad HRRN calculada: … - Estimación próxima ráfaga: …`.
 
-## 6. Al finalizar un Job
-1. Pasa a EXIT y le pide a la Placa `OP_FINALIZAR_JOB`.
-2. Loguea las estadísticas en una línea:
-```
-## (0) finalizó su ejecución con motivo de EXIT. Estadísticas: Tiempo total de ejecución: … - Tiempo para ingresar (NEW): … - Espera en READY: … - Memoria dinámica máxima: … - Syscalls: … - Page faults: … - Transiciones READY=>EXEC: …
-```
-3. Loguea el contexto final (`## (0) Contexto final: PC=… AX=… …`). No es obligatorio: sirve para validar los registros.
-4. Libera su lugar de multiprogramación.
+**Ejemplo numérico** (α = 0,5 y `ESTIMACION_INICIAL` = 1000 ms):
 
-**Motivos posibles:** `EXIT`, `OUT_OF_MEMORY`, `ERROR_PLACA`, `ERROR_PAGE_FAULT`, `ERROR_LOADER`, `ERROR_LABELER`, `ERROR_LOGGER`, `ERROR_SYSCALL`, `SIN_ESPACIO_STORAGE`, `CHECKPOINT_INEXISTENTE`, `ERROR_STORAGE`.
+| Job | Historia | S | W | RR = (W + S) / S |
+| --- | --- | --- | --- | --- |
+| A | Ejecutó 400 ms y se bloqueó; ahora espera | 0,5 · 400 + 0,5 · 1000 = **700** | 1400 | (1400 + 700) / 700 = **3,0** |
+| B | Nuevo, nunca ejecutó | 1000 | 200 | (200 + 1000) / 1000 = **1,2** |
 
-## 7. Bugs a lo largo del desarrollo
-Los que afectaron al Planificador, en orden. El registro completo de todos los módulos está en [[Bugs encontrados]].
+Se elige **A**: esperó mucho y además se estima corto. Si B sigue esperando, su W crece y su RR sube, hasta superar al de cualquier Job que recién llega. Por eso **HRRN no tiene inanición**: la espera funciona como *aging*.
 
-| Cuándo | Bug | Qué causaba | Cómo se resolvió |
+> [!warning] Trampas de planificación
+> - **HRRN no es expropiativo.** La estimación no interrumpe a nadie: solo se usa para elegir en READY.
+> - **En HRRN no hay timer ni desalojo**, aunque la config tenga `RR_QUANTUM`.
+> - **La ráfaga real es el tiempo en EXEC de esa vez.** Un `ALLOC` en el medio no la corta, porque el Job no sale de EXEC.
+> - **En RR, una syscall bloqueante no es un desalojo:** el Job va a BLOCKED, no a READY, y no se loguea "Desalojado".
+
+---
+
+## 6. Syscalls: el Planificador como kernel
+
+**Teoría:** una **syscall** es el pedido de un proceso al kernel por algo que no puede hacer en modo usuario. El Core no tiene acceso al sistema: se lo pide al Planificador con `OP_SYSCALL {id, jid, contexto, parámetros}`.
+
+| Syscall | ¿Bloquea? | Qué hace el Planificador | Respuesta al Core |
 | --- | --- | --- | --- |
-| 08/10 (Check 2) · `a27dd3e` | **Payloads incompatibles con el Core:** mandaba la interrupción como `{motivo, jid}` y leía la devolución como `{uint32 motivo, uint32 jid}`. El Core usa `{jid, motivo}` y `{uint32 jid, uint8 motivo}` | RR nunca desalojaba: el Core comparaba el motivo con el JID y descartaba todas las interrupciones. Las devoluciones se leían con el motivo y el JID cruzados | Se unificó el orden con el del Core. Desde entonces hay un solo header de protocolo para todos |
-| 08/10 · `a27dd3e` | **No leía la confirmación de `OP_CREAR_JOB`** | La respuesta quedaba en el socket de la Placa y desfasaba el pedido siguiente (por ejemplo, la finalización) | Se lee `{ok}` en cada creación, y se agregó `creado_en_placa` para no finalizar en la Placa un Job que nunca se creó |
-| 08/10 · `08eb85d` | **Opcode duplicado:** `OP_RSP_CREAR_JOB_PLACA` como copia local del de la rama `placa` | Dos nombres para el mismo valor podían desincronizarse sin que el compilador avisara | Después del merge se usa el del protocolo |
-| 30/10 (Check 3) · `169c8a8` | **Un Core que se caía dejaba páginas lockeadas** | Esos marcos nunca más podían ser víctimas; con pocos marcos, los page faults no se resolvían | Al detectar la desconexión: `OP_DESLOCKEO_PAGINAS {jid}` y el Job vuelve a READY |
-| 14/11 · `69c087f` (en el Core) | **Contrato de `ALLOC`/`FREE` rechazados:** el Core se desconectaba con un `FREE` inválido y devolvía con `EXIT` un Job ya finalizado por `ALLOC` | El Planificador perdía un Core, o recibía la devolución de un Job inexistente | Se acordó el contrato: `FREE` falso → el Job sigue; `ALLOC` falso → el Planificador finaliza el Job y el Core lo abandona sin devolverlo |
-| 24/11 · `9793672` | **Ctrl-C sin cierre:** el proceso moría sin loguear nada | En los logs no quedaba por qué terminó | Hilo de cierre con `sigwait()`: loguea `Se recibió SIGINT` y termina. No se usa `exit()` porque se colgaba con el Labeler leyendo `stdin` |
-| 27/11 · `d7dcf74` | **Dos Cores con el mismo ID** se registraban a la vez | El despacho y la interrupción podían ir al Core equivocado y un Job quedaba asignado a un Core que nunca lo recibía | El chequeo del ID, la respuesta del handshake y el alta van juntos bajo `mutex_cores`: el repetido se rechaza |
-| 28/11 · sin commitear | **Warning falso del Job inicial** (`no es legible desde el Planificador`) y **`EXEC → BLOCKED` sin motivo** en el log | Un `[WARNING]` en todas las corridas correctas, y no se veía el page fault leyendo solo el log del Planificador | Se sacó el warning (el script lo lee la Placa) y se agregó `## (N) - Page Fault - Página: P` |
+| `INIT_JOB` | No | Crea un Job en NEW | `{true, jid_nuevo}` |
+| `ALLOC` | No | Pide espacio a la Placa y anota la reserva | `{true, dir_lógica}`, o `{false}` y finaliza el Job (`OUT_OF_MEMORY`) |
+| `FREE` | No | Libera en la Placa | `{true}`, o `{false}` y el Job sigue |
+| `LOAD_BATCH` · `LABEL` · `REPORT` | **Sí** | BLOCKED → cola del servicio | Ninguna: el Core ya soltó el Job |
+| `SAVE` · `LOAD` · `DELETE_CHECKPOINT` | **Sí** | BLOCKED → cola de Checkpoints → Storage | Ninguna |
+| `EXIT` | — | Finaliza el Job | — |
 
-Además hubo problemas de concurrencia que se **previeron en el diseño** y nunca llegaron a ser bugs (ver [[Concurrencia y sincronización]]):
-- **Respuestas cruzadas en el socket de la Placa:** se resolvió con pedido y respuesta bajo `mutex_placa`.
-- **Interrupción tardía de un quantum vencido:** se resolvió con el número de despacho.
-- **Contexto perdido:** se resolvió guardándolo siempre antes de mirar el motivo.
+> [!question] ¿Por qué algunas bloquean y otras no?
+> Las que no bloquean son rápidas y el Core puede esperarlas. Las que bloquean tardan (el Loader espera `RETARDO_LOADER`, el Labeler espera al teclado, el Storage tiene retardos de disco): son **E/S**. Si el Core esperara, la CPU quedaría ociosa. Al bloquear, el Core queda libre para otro Job. Es exactamente por qué en la teoría un proceso que hace E/S pasa a bloqueado.
 
-## 8. Conceptos de la materia aplicados
+### Los servicios
+Cada servicio tiene **un hilo y una cola FIFO**, y atiende de a una petición. Es un **productor-consumidor**: el hilo del Core produce peticiones y el hilo del servicio las consume.
 
-| Concepto | Dónde aparece en el Planificador |
+| Servicio | Hace |
 | --- | --- |
-| **PCB** | `t_proceso`: JID, estado, contexto de 14 registros, estimación, tiempos y contadores |
-| **Diagrama de 5 estados** | NEW, READY, EXEC, BLOCKED y EXIT, con cada transición logueada |
-| **Planificador de largo plazo y grado de multiprogramación** | Hilo de largo plazo + `sem_multiprogramacion`: admite Jobs solo si hay lugar |
-| **Planificador de corto plazo** | Hilo de corto plazo: elige de READY y despacha a una CPU (Core) libre |
-| **FIFO** (no expropiativo) | Orden de llegada a READY; puede tener efecto convoy |
-| **Round Robin** (expropiativo) | Timer de `RR_QUANTUM` + interrupción; el Job desalojado vuelve al final de READY |
-| **HRRN** (no expropiativo, sin inanición) | `(W + S) / S`: la espera W hace subir la prioridad de los Jobs largos (*aging*) |
-| **Estimación de ráfagas** | Media exponencial: `S(n+1) = α · R(n) + (1 − α) · S(n)` |
-| **Cambio de contexto** | El Core devuelve el contexto en cada devolución o syscall que bloquea; el Planificador lo guarda y lo reenvía en el próximo despacho |
-| **Interrupciones** | `OP_INTERRUPCION` por fin de quantum; el Core la atiende en el Check Interrupt |
-| **Syscalls y modo kernel** | Lo que el Core no puede resolver se lo pide al Planificador, que hace de kernel |
-| **E/S bloqueante** | Los servicios bloquean al Job y liberan la CPU para otro, como un dispositivo de E/S |
-| **Page fault y paginación bajo demanda** | El Planificador bloquea al Job, pide la carga de la página y lo devuelve a READY para reintentar la instrucción |
-| **Bloqueo de páginas** | Deslockea al terminar cada servicio y cuando se cae un Core, como se liberan los buffers de E/S |
-| **Multiprocesador** | N Cores ejecutando en paralelo, que entran y salen en cualquier momento |
-| **Productor-consumidor** | Colas de NEW, READY y de cada servicio, con mutex + semáforo contador |
-| **Exclusión mutua** | Un mutex por recurso compartido: colas, lista de Cores, socket de la Placa y del Storage, socket de cada Core |
-| **Prevención de deadlock** | Orden fijo de locks (`mutex_cores` → `mutex_socket`) y ningún pedido a otro módulo con dos locks de socket tomados |
-| **Sin espera activa** | Todo bloquea en semáforos, `accept`, `recv`, `getline` o `sigwait`: 0 % de CPU en reposo |
-| **IPC por sockets, cliente-servidor** | Cliente de la Placa y del Storage, servidor de los Cores, con un protocolo serializado propio |
-| **Señales** | SIGINT/SIGTERM bloqueadas en todos los hilos y atendidas por un hilo con `sigwait()` |
+| Loader | Lee el archivo de `PATH_DATOS`, espera `RETARDO_LOADER` y escribe en la memoria del Job |
+| Labeler | `## (N) - Ingrese K caracteres:` → lee del teclado → escribe |
+| Logger | Lee de la memoria → hexadecimal → `PATH_REPORTES` |
+| Checkpoints | Lee o escribe la memoria y habla con el Storage |
 
-Más conceptos y preguntas probables en [[Teoría vs implementación]].
+El Core manda los **tramos físicos** ya traducidos (dirección física + tamaño por página), y esas páginas quedan **lockeadas** en la Placa. Al terminar, el servicio **siempre deslockea**, aunque falle: si no, esos marcos nunca más podrían reemplazarse.
 
-## 9. Decisiones de diseño
+---
 
-| Decisión | Alternativa descartada | Por qué |
+## 7. Page fault
+
+1. El Core pide el marco de una página y la Placa responde que no está.
+2. El Core devuelve el Job con `PAGE_FAULT`, la página y el contexto, **sin avanzar el PC**.
+3. El Planificador loguea `## (N) - Page Fault - Página: P` y pasa el Job a **BLOCKED**.
+4. Un hilo le pide a la Placa `OP_CARGA_PAGINA`. La Placa elige víctima si hace falta.
+5. Si sale bien, el Job vuelve a **READY** y, al ejecutar, **reintenta la misma instrucción**. Si falla, finaliza con `ERROR_PAGE_FAULT`.
+
+**Teoría:** paginación bajo demanda. El page fault **no es un error**: es la forma normal en que una página entra a memoria. Se bloquea porque traer una página del swap (el Offload) es E/S lenta.
+
+> [!question] ¿Por qué el PC no avanza?
+> Porque la instrucción no se ejecutó. Todas las traducciones se resuelven antes de tocar registros o memoria, así que la instrucción se repite entera cuando la página está.
+
+---
+
+## 8. Concurrencia
+
+**Hilos del Planificador:** largo plazo, corto plazo, servidor de Cores, un hilo por Core conectado, un timer por despacho (RR), un hilo por page fault, uno por servicio (4) y el de cierre (Ctrl-C).
+
+| Recurso compartido | Lo protege | Por qué |
 | --- | --- | --- |
-| Si un Core se cae con un Job en EXEC, el Job vuelve a **READY** con su último contexto y se deslockean sus páginas | Finalizar el Job con error | Que un Core se desconecte no es un error del Job; la prueba de estabilidad lo hace a propósito |
-| Un solo socket con la Placa, con pedido y respuesta bajo `mutex_placa` | Un socket por hilo | Más simple y suficiente: el costo real son los retardos de la Placa. Evita respuestas cruzadas |
-| El timer de quantum es un hilo por despacho y guarda ID del Core + número de despacho | Un único hilo reloj | Validar el número de despacho hace inofensiva una interrupción tardía |
-| HRRN recalcula la estimación cada vez que el Job sale de EXEC | Solo al bloquearse | Toda ráfaga terminada aporta información sobre la próxima |
-| Un hilo y una cola FIFO por servicio, más uno para Checkpoints | Un hilo por petición | El enunciado pide de a una petición por servicio; los distintos servicios sí corren en paralelo |
-| El deslockeo se hace **siempre**, aunque el servicio falle | Finalizar sin deslockear | Las páginas lockeadas nunca serían víctimas y esos marcos se perderían |
-| `ALLOC` sin espacio responde `false` y finaliza el Job; `FREE` inválido responde `false` y el Job sigue | Finalizar en los dos casos | Quedarse sin Offload compromete al Job; un `FREE` inválido no |
-| En `ALLOC` rechazado, se responde al Core **antes** de liberarlo | Liberar primero | El Core está esperando la respuesta: si se liberara antes, podría recibir otro Job sin haber leído la respuesta |
-| `DELETE_CHECKPOINT` de uno inexistente solo se informa | Finalizar el Job | Lo pide el enunciado |
-| Directorio lleno y falta de espacio terminan los dos en `SIN_ESPACIO_STORAGE` | Un motivo por causa | El protocolo devuelve solo `ok`; el Storage loguea cada causa |
-| Sin reconexión automática al Storage | Reintentar la conexión | Si se cae, el Job termina con `ERROR_STORAGE` sin colgar al Planificador; para seguir se repite la prueba |
-| Un Core con un ID ya conectado se **rechaza** | Aceptarlo | Con dos IDs iguales se cruzan los despachos y las interrupciones |
-| El contexto se guarda **siempre** apenas llega una devolución | Guardarlo según el motivo | Ningún camino puede perder el estado del Job |
-| Tiempos con `CLOCK_MONOTONIC` | `time()` o `CLOCK_REALTIME` | No se ve afectado por cambios de hora; resolución de ms |
+| Colas de NEW y READY, lista de Jobs | `mutex_new`, `mutex_ready`, `mutex_procesos` | Las tocan el largo plazo, el corto plazo y los hilos de los Cores |
+| Cantidad de Jobs / Cores disponibles | `sem_new`, `sem_ready`, `sem_cores_libres`, `sem_multiprogramacion` | Semáforos contadores: el hilo **se bloquea** hasta que hay algo |
+| Lista de Cores y su Job asignado | `mutex_cores` | La tocan el corto plazo, los timers y los hilos de los Cores |
+| Socket de cada Core | `mutex_socket` del Core | Despacho, interrupción y respuesta de syscall salen de hilos distintos |
+| Socket de la Placa | `mutex_placa` | **Pedido y respuesta van juntos**: si no, un hilo podría leer la respuesta de otro |
+| Socket del Storage | `mutex_storage` | Lo mismo |
+| Cola de cada servicio | `mutex_cola` + semáforo `pendientes` | Productor-consumidor |
+
+**Problemas que el diseño evita:**
+- **Condición de carrera en el socket de la Placa:** dos hilos mandan pedidos y cada uno lee la respuesta del otro → pedido y respuesta bajo el mismo mutex.
+- **Interrupción tardía:** el quantum vence justo cuando el Job ya se fue → número de despacho.
+- **Deadlock:** los locks se toman siempre en el mismo orden (`mutex_cores` → `mutex_socket`) y ningún pedido a otro módulo toma dos locks de socket a la vez. Sin espera circular, no hay deadlock.
+- **Inanición:** FIFO y RR no tienen. En HRRN la evita el *aging* por W. Los servicios atienden en orden FIFO.
+- **Espera activa:** no hay. Todos los hilos se bloquean en semáforos, `accept`, `recv`, `getline` o `sigwait`. Se midió: 0 % de CPU con el sistema en reposo.
+
+> [!question] ¿Mutex o semáforo?
+> El **mutex** da exclusión mutua: un solo hilo a la vez en la sección crítica. El **semáforo contador** cuenta recursos y bloquea al que pide cuando no hay. Las colas usan los dos: el mutex protege la lista y el semáforo cuenta cuántos elementos hay.
+
+---
+
+## 9. Robustez: Cores que entran y salen
+
+- **Entra un Core:** handshake → si su ID ya está conectado, se rechaza; si no, queda libre y el corto plazo empieza a usarlo.
+- **Se cae un Core** (Ctrl-C o `kill`): el `recv` de su hilo devuelve 0. Si tenía un Job en EXEC, el Planificador **deslockea sus páginas** y lo devuelve a **READY** con el último contexto guardado. Otro Core lo retoma.
+- **No queda ningún Core:** los Jobs esperan en READY hasta que entre uno. No hay espera activa.
+- **Se cae el Storage:** los checkpoints terminan con `ERROR_STORAGE` y el resto sigue. No se reconecta.
+- **Ctrl-C:** un hilo dedicado recibe la señal con `sigwait()`, loguea y termina.
+
+Probado en la prueba final 06: entraron y salieron Cores durante la corrida, con un Core cortado en medio de un `FORWARD`, y los 13 Jobs terminaron en `EXIT`.
+
+---
+
+## 10. Decisiones de diseño (y cómo defenderlas)
+
+| Si te preguntan… | Respuesta |
+| --- | --- |
+| ¿Por qué un Core caído devuelve el Job a READY y no lo finaliza? | La falla es de la CPU, no del Job. Su contexto está guardado, así que puede seguir en otro Core. Antes hay que deslockear sus páginas |
+| ¿Por qué un solo socket con la Placa? | Es suficiente: el costo real son los retardos de la Placa. El precio es serializar los pedidos con `mutex_placa`, y a cambio no hay respuestas cruzadas |
+| ¿Por qué un timer por despacho? | Es simple y, con el número de despacho, una interrupción tardía es inofensiva |
+| ¿Por qué la estimación se actualiza en toda salida de EXEC? | Toda ráfaga terminada da información sobre la próxima |
+| ¿Por qué un hilo por servicio y no uno por petición? | El enunciado pide atender de a una por servicio; los distintos servicios sí van en paralelo |
+| ¿Por qué deslockear aunque el servicio falle? | Una página lockeada nunca puede ser víctima: esos marcos se perderían para siempre |
+| ¿Por qué `ALLOC` fallido finaliza el Job y `FREE` fallido no? | Sin Offload el Job no puede seguir; un `FREE` inválido no compromete su memoria |
+| ¿Por qué se responde el `ALLOC` fallido antes de liberar el Core? | El Core está esperando esa respuesta: si se lo liberara antes, podría recibir otro Job sin haberla leído |
+| ¿Por qué se rechaza un Core con ID repetido? | Con dos IDs iguales, el despacho y la interrupción podrían ir al Core equivocado |
+| ¿Por qué `CLOCK_MONOTONIC`? | No lo afectan los cambios de hora del sistema |
 
 Las decisiones de los demás módulos están en [[Decisiones de diseño]].
 
-## 10. Ejemplo real: prueba 01 FIFO en 4 máquinas (27/11)
-Planificador en la .31, Placa en la .18, Storage en la .26 y Core 1 en la .25:
+---
 
-```
-## Conectado a Placa exitosamente (192.168.1.18:8081)
-## Conectado a Storage exitosamente (192.168.1.26:8082)
-## (0) Se crea el Job - Estado: NEW
-## (0) Pasa del estado NEW al estado READY
-## Módulo: CORE
-## (0) - Solicitó syscall: INIT_JOB          (crea los Jobs 1, 2 y 3)
-## (1) - Solicitó syscall: ALLOC
-## (1) Pasa del estado EXEC al estado BLOCKED    (page fault de la página 0)
-## (1) Pasa del estado BLOCKED al estado READY
-## (1) - Solicitó syscall: LOAD_BATCH
-## (1) inicia Loader
-## (1) - Escritura - Dirección Física: 0 - Tamaño: 8
-## (1) - Deslockeo de páginas
-## (1) finalizó Loader y pasa a READY
-## (1) finalizó su ejecución con motivo de EXIT. Estadísticas: …
-```
+## 11. Bugs que tuvimos y qué aprendimos
 
-Los 4 Jobs terminaron en `EXIT`. Ver [[Laboratorio manual 2026-11-27]].
+| Bug | Qué causaba | Arreglo | Lección |
+| --- | --- | --- | --- |
+| Interrupción armada como `{motivo, jid}` cuando el Core leía `{jid, motivo}` (`a27dd3e`) | RR nunca desalojaba | Un solo orden, con un solo header de protocolo | El protocolo tiene que estar en un único lugar |
+| No se leía la confirmación de `OP_CREAR_JOB` (`a27dd3e`) | La respuesta quedaba en el socket y desfasaba el pedido siguiente | Leer siempre la respuesta | En un socket compartido, todo pedido tiene que consumir su respuesta |
+| Un Core caído dejaba páginas lockeadas (`169c8a8`) | Marcos perdidos para siempre | Deslockear al detectar la desconexión | Todo camino de salida libera los recursos |
+| Dos Cores con el mismo ID (`d7dcf74`) | Despachos e interrupciones cruzados | Chequeo y alta atómicos bajo `mutex_cores` | Las operaciones "verificar y registrar" tienen que ser atómicas |
+| Ctrl-C sin cierre (`9793672`) | No quedaba registro del fin | Hilo con `sigwait()` | Manejar las señales en un solo hilo |
+
+El registro completo está en [[Bugs encontrados]].
+
+---
+
+## 12. Preguntas probables
+
+**Planificación**
+- **¿Qué diferencia hay entre el planificador de largo y el de corto plazo?** El de largo plazo admite Jobs al sistema según el grado de multiprogramación. El de corto plazo elige cuál de los admitidos (en READY) usa la CPU.
+- **¿Qué algoritmo es expropiativo?** Solo RR, por quantum. FIFO y HRRN dejan ejecutar hasta que el Job se bloquea o termina.
+- **¿HRRN puede tener inanición?** No: W crece mientras el Job espera, y su RR termina superando al de los demás.
+- **¿Qué pasa con α = 1? ¿Y con α = 0?** Con α = 1, la estimación es solo la última ráfaga real. Con α = 0, nunca cambia: queda siempre `ESTIMACION_INICIAL`.
+- **¿Qué pasa si vence el quantum cuando el Job ya se bloqueó?** El número de despacho no coincide y no se manda la interrupción. Si llegara igual, el Core la descarta porque el JID no es el que ejecuta.
+- **¿Dónde va un Job desalojado por quantum?** Al final de READY, como dice RR.
+
+**Syscalls y bloqueos**
+- **¿Por qué `LOAD_BATCH` bloquea y `ALLOC` no?** `LOAD_BATCH` es E/S lenta; `ALLOC` se resuelve con un pedido rápido a la Placa.
+- **¿Quién le responde al Core en una syscall bloqueante?** Nadie: el Core ya soltó el Job y quedó libre. Cuando el servicio termina, el Job vuelve a READY.
+- **¿Por qué deslockea el Planificador y no el Core en los servicios?** Porque las páginas tienen que seguir lockeadas mientras el servicio escribe o lee en ellas, y eso pasa después de que el Core soltó el Job.
+
+**Concurrencia**
+- **¿Hay espera activa?** No. Todos los hilos se bloquean en primitivas del sistema operativo; se midió 0 % de CPU en reposo.
+- **¿Puede haber deadlock?** No: los locks se toman en orden fijo y nunca se retienen dos sockets a la vez.
+- **¿Por qué el corto plazo espera dos semáforos?** Para despachar hacen falta las dos cosas: un Job listo y una CPU libre.
+
+**Robustez**
+- **¿Qué pasa si se cae un Core con un Job en EXEC?** Se deslockean sus páginas y el Job vuelve a READY con su último contexto.
+- **¿Y si se agregan Cores en medio de la ejecución?** Quedan disponibles al instante y el corto plazo empieza a usarlos.
+- **¿Por qué hay que levantar la Placa y el Storage antes?** Porque el Planificador se conecta como cliente al arrancar y aborta si no están.
+
+---
+
+## 13. Logs que conviene saber leer
+
+| Log | Qué muestra |
+| --- | --- |
+| `## (N) Se crea el Job - Estado: NEW` | Creación (Job inicial o `INIT_JOB`) |
+| `## (N) Pasa del estado A al estado B` | Cada transición del diagrama |
+| `## (N) - Solicitó syscall: NOMBRE` | Llegó una syscall |
+| `## (N) - Page Fault - Página: P` | Por qué pasa de EXEC a BLOCKED sin una syscall (no es obligatorio) |
+| `## (N) - Desalojado por fin de quantum` | RR expropió la CPU |
+| `## (N) - Prioridad HRRN calculada: … - Estimación próxima ráfaga: …` | Los candidatos que comparó HRRN |
+| `## (N) inicia <Servicio>` / `## (N) finalizó <Servicio> y pasa a READY` | Inicio y fin de una E/S |
+| `## (N) - Lectura/Escritura - Dirección Física: D - Tamaño: T` | Acceso a la memoria del Job desde un servicio |
+| `## (N) - Deslockeo de páginas` | Se liberaron las páginas de un servicio |
+| `## (N) finalizó su ejecución con motivo de M. Estadísticas: …` | Fin del Job: tiempo total, en NEW, en READY, memoria máxima, syscalls, page faults y transiciones READY→EXEC |
+
+Ejemplo real de la prueba 01 FIFO en 4 máquinas en [[Laboratorio manual 2026-11-27]].
