@@ -169,16 +169,55 @@ Se elige **A**: esperó mucho y además se estima corto. Si B sigue esperando, s
 > Las que no bloquean son rápidas y el Core puede esperarlas. Las que bloquean tardan (el Loader espera `RETARDO_LOADER`, el Labeler espera al teclado, el Storage tiene retardos de disco): son **E/S**. Si el Core esperara, la CPU quedaría ociosa. Al bloquear, el Core queda libre para otro Job. Es exactamente por qué en la teoría un proceso que hace E/S pasa a bloqueado.
 
 ### Los servicios
-Cada servicio tiene **un hilo y una cola FIFO**, y atiende de a una petición. Es un **productor-consumidor**: el hilo del Core produce peticiones y el hilo del servicio las consume.
+Los servicios atienden las syscalls lentas o que tocan algo fuera de la CPU: archivos, teclado o el Storage. Son **cuatro**, cada uno con **un hilo y una cola FIFO** (`planificador/src/servicios.c`):
 
-| Servicio | Hace |
+| Syscall | Servicio |
 | --- | --- |
-| Loader | Lee el archivo de `PATH_DATOS`, espera `RETARDO_LOADER` y escribe en la memoria del Job |
-| Labeler | `## (N) - Ingrese K caracteres:` → lee del teclado → escribe |
-| Logger | Lee de la memoria → hexadecimal → `PATH_REPORTES` |
-| Checkpoints | Lee o escribe la memoria y habla con el Storage |
+| `LOAD_BATCH` | **Loader** |
+| `LABEL` | **Labeler** |
+| `REPORT` | **Logger** |
+| `SAVE_CHECKPOINT` · `LOAD_CHECKPOINT` · `DELETE_CHECKPOINT` | **Checkpoints** (mismo mecanismo, sin los logs de inicio y fin) |
 
-El Core manda los **tramos físicos** ya traducidos (dirección física + tamaño por página), y esas páginas quedan **lockeadas** en la Placa. Al terminar, el servicio **siempre deslockea**, aunque falle: si no, esos marcos nunca más podrían reemplazarse.
+**Recorrido de una petición**
+1. **Core:** traduce el rango a direcciones físicas en **tramos** que nunca cruzan una página y **lockea** esas páginas en la Placa. Si una no está cargada hay page fault: suelta los locks y la instrucción se reintenta después.
+2. **Core:** manda `OP_SYSCALL` con el contexto, el archivo o el nombre del Checkpoint, el tamaño y los tramos. Suelta el Job y **no espera respuesta**.
+3. **Planificador** (`atender_syscall_de_servicio`): Job a **BLOCKED**, libera el Core y encola la petición (`encolar_peticion`: mutex + `sem_post`).
+4. **Hilo del servicio** (`ejecutar_servicio`): `sem_wait`, saca la primera de la cola, loguea `## (N) inicia <Servicio>` y la atiende.
+5. **Siempre deslockea** las páginas en la Placa, aunque falle (salvo `DELETE_CHECKPOINT`, que no usa memoria).
+6. **Resultado:** si salió bien, `## (N) finalizó <Servicio> y pasa a READY` y el Job vuelve a **READY**. Si falló, va a **EXIT** con un motivo de error.
+
+**Loader** (`LOAD_BATCH archivo dir tam`): carga un archivo en la memoria del Job.
+- Abre `PATH_DATOS/<archivo>` y lee `tam` bytes; si el archivo es más corto, completa con ceros (warning).
+- Espera `RETARDO_LOADER` ms (simula el disco) y escribe en la Placa tramo por tramo.
+- Error (no existe el archivo, falla la escritura): `ERROR_LOADER`.
+
+**Labeler** (`LABEL dir tam`): pide un texto por teclado.
+- `## (N) - Ingrese <tam> caracteres:` y lee stdin hasta juntar esa cantidad. Si falta muestra `Faltan X caracteres:`; lo que sobra se descarta.
+- Escribe el texto en la memoria del Job.
+- Es el **único hilo que lee stdin**: los pedidos se contestan de a uno, en orden de llegada. Mientras espera queda bloqueado en `getline`, con **0 % de CPU** (medido en la batería del 28/11).
+- Error (se cerró stdin): `ERROR_LABELER`.
+
+**Logger** (`REPORT dir tam`): deja en un archivo lo que hay en la memoria del Job.
+- Lee el rango de la Placa, lo pasa a hexadecimal y agrega `## (N) - <HEX>` al final de `PATH_REPORTES` (el `reportes.log` con el que se comparan las pruebas).
+- Error (falla la lectura o no se abre el archivo): `ERROR_LOGGER`.
+
+**Checkpoints**: guardan y recuperan la memoria del Job en el Storage. Es el único servicio que habla con el Storage.
+
+| Syscall | Qué hace | Errores |
+| --- | --- | --- |
+| `SAVE_CHECKPOINT nombre dir tam` | Lee el rango de la Placa y lo manda al Storage (`OP_GUARDAR_CHECKPOINT`) | Sin espacio: `SIN_ESPACIO_STORAGE` · sin conexión: `ERROR_STORAGE` |
+| `LOAD_CHECKPOINT nombre dir tam` | Pide el Checkpoint y lo escribe en la memoria del Job. Si los tamaños no coinciden, completa con ceros o recorta (warning) | No existe: `CHECKPOINT_INEXISTENTE` · sin conexión: `ERROR_STORAGE` |
+| `DELETE_CHECKPOINT nombre` | Pide al Storage que lo borre | Si no existe **solo avisa** y el Job sigue · sin conexión: `ERROR_STORAGE` |
+
+- Un Job puede cargar el Checkpoint que guardó otro (lo verifica la prueba 04).
+- En el Storage, cada guardado es un asiento del journal (STARTED → COMMIT → APPLIED).
+
+> [!tip] Cómo defenderlo
+> - **Un hilo y una cola FIFO por servicio:** cada servicio atiende de a uno y en orden, como un dispositivo de E/S. Los cuatro servicios trabajan en paralelo entre sí.
+> - **Productor-consumidor:** el hilo del Core produce peticiones y el del servicio las consume. El **mutex** protege la cola y el **semáforo contador** `pendientes` cuenta las peticiones. Sin peticiones, el hilo duerme en `sem_wait`: no hay espera activa.
+> - **Job en BLOCKED y Core liberado:** el Core no espera la E/S y atiende otro Job, igual que una CPU real.
+> - **Páginas lockeadas mientras dura el servicio:** el servicio lee y escribe en direcciones físicas. Si el reemplazo desalojara la página a mitad de camino, escribiría en el marco equivocado. Por eso se deslockea siempre, también si falla: si no, esos marcos nunca más podrían reemplazarse.
+> - **Cada error con su motivo:** los generales salen del nombre del servicio (`ERROR_LOADER`, `ERROR_LABELER`, `ERROR_LOGGER`); los de Checkpoints son los del enunciado.
 
 ---
 
