@@ -19,7 +19,7 @@ Esta es la documentación de trabajo del TP **EntrenadOS** (grupo *RequiemSO*). 
 - [[Despliegue distribuido]]: servidores de prueba y `deploy/desplegar.sh` (cómo correr pruebas en varias máquinas)
 - `Entrega - comandos paso a paso.txt`: todos los comandos de la entrega en texto plano, prueba por prueba y por máquina
 - [[Deploy manual - Guía de laboratorio]]: **guía para el día de la entrega** (también en PDF: `TP EntrenadOS - Deploy manual.pdf`, A4 vertical, se genera con `herramientas/nota_pdf.py`)
-- [[Pruebas finales 2026-11-28]]: **informe** de las 6 pruebas finales con la rama `deploy` (10 corridas, todas ✅)
+- [[Pruebas finales 2026-11-28]]: **informe** de las 6 pruebas finales con la rama `deploy` (10 corridas, todas ✅) y la tercera batería de livelock y fugas con valgrind (0 fugas, 93/93 Jobs)
 - [[Laboratorio manual 2026-11-27]]: práctica de la entrega en modo manual (cada módulo en su VM con `preparar.sh`): 01 FIFO en 4 máquinas ✅
 - [[Pruebas finales 2026-11-24]]: las 6 pruebas oficiales de las entregas finales en los 5 servidores ✅
 - [[Check 4 2026-11-14]]: checkpoints y journaling, con `kill -9` al Storage en los 5 servidores ✅

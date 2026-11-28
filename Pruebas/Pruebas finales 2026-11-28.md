@@ -1,7 +1,7 @@
 ---
 tags: [tp-so, entrenados, pruebas, entregas-finales, informe]
 fecha: 2026-11-28
-rama: deploy (158dc6f y 10c5c86)
+rama: deploy (158dc6f y 10c5c86); main (b65d18a) en la tercera batería
 repo_pruebas: sisoputnfrba/entrenados-pruebas (e841d29)
 resultado: ok
 ---
@@ -19,6 +19,8 @@ Volver a [[00 - Inicio]] · Corrida anterior: [[Pruebas finales 2026-11-24]] · 
 > La batería completa tardó **15 minutos** (00:45 → 01:00).
 >
 > **Segunda batería (02:14 → 03:28, con 5 VMs):** las 6 finales con **5 máquinas** (22/22 criterios OK) y con **todo en una sola máquina**, **valgrind y CPU** (0 bytes perdidos, 0 % de CPU en reposo), las **suites del CP2 y el CP3** (47/47 verificaciones automáticas OK) y **robustez** (Core con ID repetido, `kill -9` al Storage en plena ejecución). Ver la [[#7. Segunda batería (5 VMs)|sección 7]].
+>
+> **Tercera batería (06:59 → 07:51, 5 VMs, código de `main`):** búsqueda de **livelock y fugas** con los 4 módulos bajo valgrind en las 6 finales y en el CP3. **0 bytes perdidos en 104 reportes, 0 accesos inválidos, 93/93 Jobs terminados y ningún livelock.** Ver la [[#8. Tercera batería: livelock y fugas (código de main)|sección 8]].
 
 ## 1. Ambiente
 
@@ -202,12 +204,44 @@ Los 4 módulos y los 4 Cores en la misma VM de 2 CPU: el otro extremo del repart
 
 **Observación:** el Core abre las conexiones al Planificador y a la Placa **antes** de hacer los handshakes. Cuando el Planificador rechaza un ID repetido, el Core termina con la conexión a la Placa abierta y sin handshake. La Placa loguea `No se pudo recibir el handshake` y descarta la conexión. No afecta a nada. Se podría mejorar haciendo el handshake con el Planificador antes de conectarse a la Placa.
 
-## 8. Conclusión
-El TP en la rama `deploy` cumple **las 6 pruebas finales** del documento de la cátedra:
+## 8. Tercera batería: livelock y fugas (código de main)
+Corrida después del merge de `deploy` a `main` (PR #25), con el mismo código (`b65d18a`), un módulo por VM (Placa .25, Storage .26, Planificador .27, Cores .28 y .29). Duró **52 minutos** (06:59 → 07:51) y todas las corridas terminaron con código 0.
+
+| Fase | Qué se corrió | Resultado |
+| --- | --- | --- |
+| V | Las 6 finales (9 corridas: 01 FIFO/RR/HRRN, 02 LRU/CLOCK-M, 03, 04 checkpoints y fs_lleno, 05 A y B) con **los 4 módulos bajo valgrind** | ✅ Todos los Jobs con el motivo esperado. 05: asiento 2 `DESCARTADO` en A y `APLICADO` en B |
+| R | La 06 bajo valgrind (entra el Core 3, se corta el 1 durante `FORWARD`/`BACKWARD`, vuelve y entra el 4) y CPU | ✅ 13/13 Jobs, 0 frames lockeados, **0,0 % de CPU** en reposo y con el Labeler esperando teclado |
+| L | Suite del CP3 con valgrind y del CP2 (`--rapido`) | ✅ CP3 **19/19** y CP2 **28/28** |
+
+En la 05 el Storage de la primera corrida no va bajo valgrind: la acción `matar` busca el binario al principio de la línea de comando y un proceso muerto con `kill -9` no deja reporte. Los reinicios del Storage sí corren bajo valgrind.
+
+### Fugas de memoria
+- **104 reportes de valgrind**: `definitely lost` e `indirectly lost` en **0 bytes** en todos.
+- **0 accesos inválidos** (lecturas o escrituras inválidas, memoria sin inicializar, parámetros de syscalls).
+- Todo el `possibly lost` está en bloques de **exactamente 272 B**, el bloque TLS que reserva glibc en cada `pthread_create`. Son hilos todavía vivos cuando el Ctrl-C corta el proceso; no son fugas del TP. Se verificó en cada reporte (bytes = 272 × bloques).
+
+### Livelock
+El livelock conocido ([[Bugs encontrados#Livelock con rangos más grandes que la memoria|límite documentado]]) es un Job que reintenta la misma instrucción para siempre: page fault → carga → page fault. Se buscó en los logs con tres señales:
+
+| Señal | Cómo se mide | Resultado |
+| --- | --- | --- |
+| Jobs que no terminan | Jobs creados contra `finalizó su ejecución` | **93/93** terminados |
+| Re-subida en una misma instrucción | En la Placa, dentro de una racha de fetch del mismo PC, la misma página subida dos veces o más | Solo 1 o 2 veces seguidas (06 y 02 CLOCK-M): otro Job desaloja la página entre el page fault y el reintento, y después la instrucción termina. La alerta (3 o más) no saltó nunca |
+| Espera activa | CPU de cada proceso en reposo y con Jobs bloqueados | 0,0 % en todos |
+
+La racha más larga de reintentos es de 26 fetch seguidos, un `LOAD_BATCH` de 1600 bytes en fs_lleno: se reintenta una vez por cada página del rango que falta y termina.
+
+**Observación para el coloquio:** en la recuperación, un asiento que ya tenía `APPLIED` se loguea `DESCARTADO`. El enunciado solo define `APLICADO / DESCARTADO`, y todo lo que no se vuelve a aplicar se informa como `DESCARTADO` (ver [[Storage]]).
+
+## 9. Conclusión
+El TP (rama `deploy`, mergeada a `main`) cumple **las 6 pruebas finales** del documento de la cátedra:
 - distribuido en **5 máquinas**, en **2** y en **1**;
 - con Cores que entran, salen y se rechazan si repiten el ID;
 - sin fugas de memoria ni esperas activas;
 - sin regresiones en las suites del CP2 y el CP3;
-- sin colgarse ante la caída del Storage. Pendiente antes de cerrar la entrega: llevar `deploy` a `develop` y a `main`.
+- sin livelock en ninguna de las pruebas (93/93 Jobs terminados);
+- sin colgarse ante la caída del Storage.
+
+`deploy` ya está en `main` (PR #25): la entrega se clona de `main`.
 
 Resultados completos en `tp-2026-2c-requiemso/deploy/resultados/catedra-entregas_finales-*-20261128-*` (no se versionan).
