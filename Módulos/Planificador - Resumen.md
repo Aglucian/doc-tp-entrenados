@@ -295,7 +295,121 @@ El registro completo está en [[Bugs encontrados]].
 
 ---
 
-## 13. Logs que conviene saber leer
+## 13. Estructuras de datos (preguntas y respuestas)
+
+### Propias del Planificador
+
+**¿Cuál es el PCB del TP?**
+`t_proceso` (`planificacion.h`). Guarda todo lo que el sistema sabe de un Job:
+- **Identidad y estado:** `pid` (el JID), `estado` (`t_estado`) y `path`, el script que carga la Placa.
+- **Contexto:** `contexto` (`t_contexto`). Se guarda cada vez que el Core devuelve el Job y se reenvía en el próximo despacho.
+- **`creado_en_placa`:** evita pedirle a la Placa que finalice un Job que nunca llegó a crear (por ejemplo, uno que terminó en `ERROR_PLACA`).
+- **HRRN:** `estimacion_rafaga` (ms): arranca en `ESTIMACION_INICIAL` y se actualiza al salir de EXEC.
+- **Tiempos** (`CLOCK_MONOTONIC`): `tiempo_creacion`, `tiempo_entrada_estado` y los acumulados en NEW y READY. Sirven para las estadísticas y para la `W` de HRRN.
+- **Contadores:** `transiciones_ready_exec`, `cantidad_syscalls` y `cantidad_page_faults`.
+- **Memoria dinámica:** `memoria_dinamica_actual`, `memoria_dinamica_maxima` y `reservas`.
+
+**¿Para qué está `t_reserva` si la memoria la maneja la Placa?**
+`t_reserva {direccion_logica, tamanio}` guarda cada `ALLOC` no liberado. La Placa administra la memoria, pero las estadísticas piden la **memoria dinámica máxima** del Job. El `FREE` solo trae la dirección, así que con las reservas el Planificador sabe cuánto restar.
+
+**¿Qué es `t_estado`?**
+`NEW`, `READY`, `EXEC`, `BLOCKED` y `EXIT`: el modelo de 5 estados de la teoría.
+
+**¿Qué representa `t_core`?**
+Una **CPU conectada** (`comunicacion.h`):
+- `socket` e `id_core`, el que informa el Core en el handshake;
+- `jid_asignado`: el Job que ejecuta, o `JID_LIBRE` (`UINT32_MAX`);
+- `numero_despacho`: cambia en cada despacho y liberación;
+- `hilo`: el hilo que lo atiende;
+- `mutex_socket`: serializa los envíos (despacho, interrupción y respuesta de syscall).
+
+**¿Por qué el timer de RR no guarda un puntero al Job?**
+Porque cuando vence, el Job puede haberse bloqueado o terminado, y hasta pudo liberarse su struct. `t_quantum {id_core, numero_despacho}` (privado) guarda solo números. Si el número de despacho ya no coincide, el timer no hace nada.
+
+**¿Qué son `t_page_fault` y `t_algoritmo`?**
+Los dos son privados de `planificacion.c`:
+- **`t_page_fault {proceso, nro_pagina}`:** el argumento del hilo que resuelve un page fault.
+- **`t_algoritmo`:** `FIFO`, `RR` o `HRRN`, leído una sola vez de la config para no comparar strings en cada elección.
+
+**¿Qué son `t_tramo` y `t_peticion`?**
+Los dos están en `servicios.h`:
+- **`t_tramo {direccion_fisica, tamanio}`:** un pedazo del rango que el Core ya tradujo. Nunca cruza una página.
+- **`t_peticion`:** lo que se encola en un servicio:
+  - `proceso`, `syscall` y `archivo` (el archivo de datos en `LOAD_BATCH`, el nombre en los checkpoints);
+  - `tamanio` y `tramos`;
+  - `motivo_error`: con qué motivo se finaliza el Job si falla.
+
+**¿Qué es `t_servicio`?**
+Un servicio como objeto (privado de `servicios.c`):
+- `nombre` y `es_servicio`: en Checkpoints es `false`, porque no emite los logs de inicio y fin;
+- `atender`: un **puntero a función** con la lógica de cada servicio;
+- `cola`, `mutex_cola` y el semáforo `pendientes`: el productor-consumidor.
+
+Hay 4 instancias estáticas: Loader, Labeler, Logger y Checkpoints. Un solo hilo genérico (`ejecutar_servicio`) sirve para los cuatro.
+
+**¿Qué son `t_resultado_storage` y `t_alta_core`?**
+- **`t_resultado_storage`:** `STORAGE_OK`, `STORAGE_RECHAZADO` (el Storage dijo `ok=false` → `SIN_ESPACIO_STORAGE` o `CHECKPOINT_INEXISTENTE`) o `STORAGE_SIN_CONEXION` (→ `ERROR_STORAGE`).
+- **`t_alta_core`:** `ALTA_OK`, `ALTA_ID_REPETIDO` o `ALTA_SIN_RESPUESTA`, el resultado de registrar un Core.
+
+**¿Para qué está `t_planificador`?**
+Es el estado global del módulo (`main.h`):
+- los argumentos, el `t_config` y el `t_log`;
+- todas las claves de la config ya convertidas a su tipo;
+- los sockets de la Placa, del Storage y del servidor.
+
+Se carga una vez y después solo se lee.
+
+### De `utils` (compartidas con los otros módulos)
+
+**¿Qué es `t_contexto`?**
+Los **14 registros** del Job: `pc`, `p0–p5`, `ax–dx` y `e1–e3`, todos `uint32`. Está en utils porque el Planificador, el Core y el protocolo tienen que serializarlo **igual**.
+
+**¿Qué es `op_code`?**
+El código de cada mensaje (1 byte en el socket), agrupado por rangos: `0x00` handshake, `0x10` Planificador→Placa, `0x30` Planificador→Storage, `0x40` Planificador↔Core y `0x60` Core→Placa.
+
+**¿Qué son `t_modulo` y `handshake_msg`?**
+`t_modulo` dice quién se conecta. `handshake_msg {modulo, id_core}` es lo primero que manda un cliente: con eso el Planificador rechaza lo que no sea un Core y obtiene su ID.
+
+**¿Qué son `t_motivo_devolucion`, `t_motivo_interrupcion` y `t_syscall`?**
+- **`t_motivo_devolucion`:** por qué el Core devuelve un Job: `FIN_QUANTUM`, `PAGE_FAULT`, `SYSCALL` o `EXIT`.
+- **`t_motivo_interrupcion`:** hoy tiene un solo valor, `FIN_QUANTUM`.
+- **`t_syscall`:** las 10 syscalls con número fijo, que es el `id` de `OP_SYSCALL`.
+
+**¿Qué es `t_buffer`?**
+El buffer de serialización:
+- `stream`: los bytes;
+- `size` y `capacidad`: crece solo al agregar datos;
+- `offset`: por dónde va la lectura;
+- `valido`: pasa a `false` si una lectura se pasa del final.
+
+Un mensaje truncado se detecta con un solo `buffer_es_valido()` al final.
+
+**¿Qué constantes trae el protocolo?**
+`CANT_REGISTROS = 14`, `MAX_PAYLOAD_SIZE = 16 MiB` (un `size` absurdo se rechaza en lugar de reservar memoria) y `PROTOCOLO_ENTRENADOS_VERSION`.
+
+### Colecciones y primitivas
+
+**¿Qué colecciones usa?**
+`t_list` de las commons:
+- `procesos` (todos los Jobs), `cola_new` y `cola_ready`;
+- `cores`;
+- la cola de cada servicio;
+- las `reservas` y los `tramos`.
+
+`t_config` y `t_log` también son de las commons. Los mutex (`pthread_mutex_t`) y los semáforos (`sem_t`) son de POSIX.
+
+**¿Dónde está la cola de BLOCKED? ¿Y la de EXEC?**
+No hay una lista para cada uno, y es a propósito:
+- un Job **bloqueado** está referenciado desde donde espera: la cola de un servicio (`t_peticion`) o el hilo de su page fault (`t_page_fault`);
+- uno **en EXEC** se sabe por el `jid_asignado` de su `t_core`;
+- **todos** están en `procesos`, para buscarlos por JID.
+
+**¿Por qué las colas usan mutex y semáforo a la vez?**
+El mutex protege la **lista** (exclusión mutua). El semáforo **cuenta** los elementos, para que el consumidor se bloquee sin espera activa. Por ejemplo, el corto plazo hace `sem_wait(sem_ready)` y recién ahí toma `mutex_ready` para sacar al Job.
+
+---
+
+## 14. Logs que conviene saber leer
 
 | Log | Qué muestra |
 | --- | --- |
