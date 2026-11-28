@@ -1,7 +1,7 @@
 ---
 tags: [tp-so, entrenados, pruebas, entregas-finales, informe]
 fecha: 2026-11-28
-rama: deploy (158dc6f)
+rama: deploy (158dc6f y 10c5c86)
 repo_pruebas: sisoputnfrba/entrenados-pruebas (e841d29)
 resultado: ok
 ---
@@ -17,6 +17,8 @@ Volver a [[00 - Inicio]] · Corrida anterior: [[Pruebas finales 2026-11-24]] · 
 > - Los resultados coinciden con los del 24/11. Solo cambian la cantidad de desalojos y de reemplazos, que dependen de los tiempos.
 >
 > La batería completa tardó **15 minutos** (00:45 → 01:00).
+>
+> **Segunda batería (02:14 → 03:28, con 5 VMs):** las 6 finales con **5 máquinas** (22/22 criterios OK) y con **todo en una sola máquina**, **valgrind y CPU** (0 bytes perdidos, 0 % de CPU en reposo), las **suites del CP2 y el CP3** (47/47 verificaciones automáticas OK) y **robustez** (Core con ID repetido, `kill -9` al Storage en plena ejecución). Ver la [[#7. Segunda batería (5 VMs)|sección 7]].
 
 ## 1. Ambiente
 
@@ -141,11 +143,71 @@ Además del runner, se corrió a mano como en el laboratorio, con `./preparar.sh
 **Diferencias esperables:** la cantidad de desalojos en RR (13 → 10) y de reemplazos en CLOCK-M (30 → 35). Dependen de cuánto tarda cada mensaje entre máquinas y de cómo se intercalan los Cores. Lo que verifica cada prueba (quién termina primero, víctimas de ambos Jobs, bajadas solo de modificadas, contenido de los reportes) es igual.
 
 ## 6. Observaciones
-- **Sin re-verificación de recursos:** no se repitió la corrida bajo valgrind ni la medición de CPU de la 06. Los cambios desde el 24/11 (cierre con Ctrl-C, ID de Cores, log del page fault) no tocan memoria dinámica. Para repetirla está `deploy/pruebas/finales/verificar_recursos.sh`.
+- **Recursos:** en la primera batería no se repitió valgrind; se hizo en la segunda (sección 7 C), con 0 fugas y 0 % de CPU en reposo.
 - **Al loguearse en la .26, el shell imprime la salida de `ifconfig`** (lo agrega el `.bashrc` de esa VM). Aparece en las salidas de consola de los módulos pero no afecta nada.
 - **En el laboratorio**, las pruebas se corren a mano; este informe usa el runner para cubrir las 10 corridas con los mismos criterios. El modo manual ya se validó con la 01 (sección 4).
 
-## 7. Conclusión
-El TP en la rama `deploy` cumple **las 6 pruebas finales** del documento de la cátedra, distribuido en varias máquinas y con Cores que entran y salen en plena ejecución. Pendiente antes de cerrar la entrega: llevar `deploy` a `develop` y a `main`.
+## 7. Segunda batería (5 VMs)
+Con las 5 VMs disponibles (.25 a .29) y el código de `deploy` en `10c5c86`, desplegado y compilado en las cinco. Para cada fase se verificaron los criterios del documento con un script (orden de los reportes, desalojos, víctimas y bajadas, lote + texto, `LS` antes y después de reiniciar, `CAT` de la 05, corte de Core en la 06).
+
+### A · Las 6 finales con 5 máquinas
+Placa en la .25, Storage en la .26, Planificador en la .27, Cores 1 y 3 en la .28, Cores 2 y 4 en la .29.
+
+| Prueba | Resultado |
+| --- | --- |
+| 01 FIFO / RR / HRRN | ✅ Orden esperado en las tres · RR: 10 desalojos, los cortos terminan antes · HRRN: 28/28 estimaciones |
+| 02 LRU / CLOCK-M | ✅ Víctimas de los dos Jobs · 24 bajadas en 32 reemplazos y 27 en 35 · reportes idénticos al 24/11 |
+| 03 | ✅ Lote + texto en los 3 reportes · Loader concurrente con el Labeler |
+| 04 checkpoints / fs_lleno | ✅ `LS` igual antes y después del reinicio (0 y 4 entradas) · motivos esperados |
+| 05 A / B | ✅ Asiento 2 `DESCARTADO` / `APLICADO` · `modelo` de 256 / 512 B · `CAT` con la versión anterior / nueva |
+| 06 | ✅ 13/13 `EXIT` · Core 1 cortado con deslockeo · `INFO` final: 0 lockeados, 0 Jobs · HRRN 675/675 |
+
+**11/11 criterios OK.** Además, el volumen de la 05 revisado byte a byte (superbloque, FAT y directorio): **0 bloques huérfanos** y cadenas del tamaño correcto (A: 4 bloques; B: 8 bloques).
+
+### B · Las 6 finales con todo en una sola máquina (.27)
+Los 4 módulos y los 4 Cores en la misma VM de 2 CPU: el otro extremo del reparto.
+
+**11/11 criterios OK**, con los mismos resultados que en la fase A: RR con 10 desalojos, CLOCK-M con 28 bajadas en 37 reemplazos y la 06 con 13/13 `EXIT` y 705/705 estimaciones HRRN. El volumen de la 05 también da 0 huérfanos.
+
+### C · Esperas activas y memory leaks
+`verificar_recursos.sh`: la 06 completa con los 4 módulos bajo valgrind (`--leak-check=full`) y las mismas actividades de Cores, más la medición de CPU.
+
+| | Placa | Planificador | Storage | Cores (5 procesos) |
+| --- | --- | --- | --- | --- |
+| Fugas confirmadas (definitely + indirectly) | 0 | 0 | 0 | 0 |
+| Accesos inválidos o sin inicializar | 0 | 0 | 0 | 0 |
+| Possibly lost | 7 × 272 B | 7 errores | 2 errores | 1 × 272 B cada uno |
+| CPU en reposo (20 s) | 0,0 % | 0,0 % | 0,0 % | 0,0 % |
+| CPU con el Labeler esperando teclado (03) | 0,0 % | 0,0 % | 0,0 % | 0,0 % |
+
+- Las "possibly lost" son las estructuras de 272 B de hilos que siguen vivos cuando el proceso termina por la señal. En los Cores aparece una desde que se agregó el hilo de cierre (`9793672`); el 24/11 los Cores daban 0.
+- Bajo valgrind, la 06 terminó igual con 13/13 `EXIT`.
+
+### D · Regresión con las suites de los checkpoints
+| Suite | Verificación automática |
+| --- | --- |
+| CP3 (`checkpoint_3 todos`) | ✅ **19/19 OK** en los escenarios 01 a 09; el 10 y el 11 (consola del Storage) con 0 errores |
+| CP2 (`checkpoint_2 todos --rapido`) | ✅ **28/28 OK**: 01_instrucciones 9/9, 02 3/3, 03 4/4, 04 4/4, 05 grado 1 y 2 4/4 |
+
+### E · Robustez (escenario 06, 5 máquinas)
+| Caso | Qué se hizo | Resultado |
+| --- | --- | --- |
+| Core con ID repetido | Con el Core 1 conectado, se lanzó otro Core con ID 1 desde la .29 | ✅ Planificador: `Ya hay un Core conectado con el ID 1: se rechaza la conexión nueva`. El Core nuevo terminó con `Handshake rechazado`; el original siguió ejecutando |
+| `kill -9` al Storage en plena ejecución | Apenas llegó el primer `Solicitud Guardar Checkpoint` | ✅ El Planificador no se colgó: 6 Jobs terminaron con `ERROR_STORAGE` (sus checkpoints fallaron) y 2 con `EXIT`. Todos los Jobs creados finalizaron |
+| Storage levantado de nuevo | Con el mismo volumen | ✅ Recuperación: asientos 1 y 2 `DESCARTADO` (no tenían COMMIT) |
+| Estado final | `INFO` en la Placa | ✅ Memoria 0 %, **0 frames lockeados**, 0 Jobs: ninguna falla dejó páginas lockeadas |
+
+- Se crearon 8 Jobs en lugar de 13, porque los que terminaron en `ERROR_STORAGE` ya no crearon los suyos.
+- Como el Planificador no se reconecta al Storage (límite conocido), los checkpoints posteriores al reinicio también fallan.
+
+**Observación:** el Core abre las conexiones al Planificador y a la Placa **antes** de hacer los handshakes. Cuando el Planificador rechaza un ID repetido, el Core termina con la conexión a la Placa abierta y sin handshake. La Placa loguea `No se pudo recibir el handshake` y descarta la conexión. No afecta a nada. Se podría mejorar haciendo el handshake con el Planificador antes de conectarse a la Placa.
+
+## 8. Conclusión
+El TP en la rama `deploy` cumple **las 6 pruebas finales** del documento de la cátedra:
+- distribuido en **5 máquinas**, en **2** y en **1**;
+- con Cores que entran, salen y se rechazan si repiten el ID;
+- sin fugas de memoria ni esperas activas;
+- sin regresiones en las suites del CP2 y el CP3;
+- sin colgarse ante la caída del Storage. Pendiente antes de cerrar la entrega: llevar `deploy` a `develop` y a `main`.
 
 Resultados completos en `tp-2026-2c-requiemso/deploy/resultados/catedra-entregas_finales-*-20261128-*` (no se versionan).
